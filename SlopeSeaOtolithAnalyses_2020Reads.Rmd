@@ -1,0 +1,25 @@
+---
+title: "SlopeSeaOtolithAnalyses_2020Reads"
+author: "Chrissy Hernandez"
+date: "7/9/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(xlsx)
+```
+
+## First, we need to shuffle the read order for read 2
+
+```{r}
+read1<- read.xlsx('data/SlopeSeaOto2016_FullRead_1.xlsx', sheetIndex = 1)
+filenames<- read1$Fish
+shuffledorder<- sample(filenames)
+write.csv(shuffledorder, file='data/SlopeSeaOto_2020Reads_read2order.csv')
+```
+
+
+```
+
+
