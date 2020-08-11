@@ -15,10 +15,10 @@ First, we need to shuffle the read order for read 2:
 read1<- read.xlsx('data/SlopeSeaOto2016_FullRead_1.xlsx', sheetIndex = 1)
 filenames<- read1$Fish
 shuffledorder<- sample(filenames)
-write.csv(shuffledorder, file='data/SlopeSeaOto_2020Reads_read2order.csv')
+write.csv(shuffledorder, file='results/SlopeSeaOto_2020Reads_read2order.csv')
 ```
 
-Next, some QC checks:
+Next, some QC checks on reads 1 and 2:
 ```{r}
 # bring in the data from otoliths read 1:
 read1<- read.xlsx('data/SlopeSeaOto2016_FullRead_1.xlsx', sheetIndex = 1)
@@ -27,15 +27,19 @@ read2<- read.xlsx('data/SlopeSeaOto2016_FullRead_2_retakes.xlsx', sheetIndex = 1
 names(read2)[length(names(read2))]<- "Age2"
 
 # use merge to combine both reads:
-bothreads<- merge(read1[,c('Fish', 'Age')], read2[,c('Fish', 'Age2')], by='Fish', all.x=F)
+bothreads<- merge(read1[,c('Fish', 'Age')], read2[,c('Fish', 'Age2')], by='Fish', all.y=T)
 # difference between the two reads:
 bothreads$diff = abs(bothreads$Age-bothreads$Age2)
 summary(bothreads$diff)
 # print the ones that differ by more than 1 day:
 bothreads[bothreads$diff>1,c("Fish", "diff")]
+
+```
+Shuffle the order for read 3:
+```{r}
 # shuffle the order:
 shuffledorder2<- sample(bothreads$Fish[bothreads$diff>1])
-write.csv(shuffledorder2, file='data/SlopeSeaOto_2020Reads_read3order.csv')
+write.csv(shuffledorder2, file='results/SlopeSeaOto_2020Reads_read3order.csv')
 ```
 
 Check read 3:
@@ -49,6 +53,7 @@ all3reads$diff2<- abs(all3reads$Age2-all3reads$Age3)
 all3reads
 
 ```
+We'll lose 2 of the 56 fish from the analysis because their otoliths didn't pass the test on read 3. 
 
 Okay, now we can treat this data as final and clean it up for use in figures, etc:
 ```{r}
@@ -61,43 +66,153 @@ read3_tokeep<- all3reads[all3reads$diff1<=1 | all3reads$diff2<=1,"Fish"]
 names(read3)[length(names(read3))]<- "Age"
 otolith_data_clean<- rbind(otolith_data_clean, read3[read3$Fish %in% read3_tokeep,])
 
+# correct the ages (I mark the edge of the core, which is not a daily increment)
+otolith_data_clean$Age<- otolith_data_clean$Age-1
+# there are a couple that I didn't even mark the edge of the core- these should still be recorded as 0, not -1
+otolith_data_clean$Age[otolith_data_clean$Age<0]<- 0
+
 # Let's also get rid of the empty columns:
 NAcolumns<- apply(otolith_data_clean, MARGIN=2, function(x){sum(is.na(x))})
 I<- which(NAcolumns==54)
 otolith_data_clean<- otolith_data_clean[,-I]
+# rename the "Fish" column as "Image"
+I<- which(names(otolith_data_clean)=="Fish")
+names(otolith_data_clean)[I]<- "Image"
+# Also, drop the "n" column which is a carryover from ImageJ and doesn't mean anything
+I<- which(names(otolith_data_clean)=="n")
+if(length(I)>0){
+  otolith_data_clean<- otolith_data_clean[,-I]
+}
 
-# break up the "Fish" column to get cruise, station, gear, fish:
-fishID<- strsplit(otolith_data_clean$Fish, "-")
+# break up the "Image" column to get cruise, station, gear, fish:
+fishID<- strsplit(otolith_data_clean$Image, "-")
 # get out the cruise IDs:
 cruise<- sapply(fishID, '[', 1)
 head(cruise)
 otolith_data_clean$Cruise<- sapply(strsplit(cruise, "Stn"), '[', 1)
 # get out the station numbers:
-station<- sapply(strsplit(otolith_data_clean$Fish, "Stn"), '[', 2)
+station<- sapply(strsplit(otolith_data_clean$Image, "Stn"), '[', 2)
 otolith_data_clean$Station<- as.numeric(sapply(strsplit(station, "-"), '[', 1))
 # get the gear IDs:
 otolith_data_clean$Gear<- sapply(strsplit(station, "-"), '[', 2)
-# get the fish numbers:
-fishNum<- sapply(strsplit(station, "-"), '[', 3)
-otolith_data_clean$FishNum<- sapply(strsplit(fishNum, '.tif'), '[', 1)
+# get the fish numbers (actually, need these as numeric to match length data):
+fishNum<- sapply(strsplit(station, "-"), '[', 3) # extracts the FX portion
+fishNum<- sapply(strsplit(fishNum, 'F'), '[', 2) # cleaves off the "F"
+fishNum<- sapply(strsplit(fishNum, '.tif'), '[', 1) # cleaves off ".tif" on any that have that
+otolith_data_clean$Fish<- as.numeric(fishNum)
 head(otolith_data_clean)
+```
 
-## Adding other metadata from the tow:
+Here's a code chunk for bringing in the other metadata:
+```{r}
+## Other metadata from the tow:
 slopeseaoperations<- read.xlsx('data/SlopeSeaOperations.xlsx', sheetIndex = 2)
 metadata<- slopeseaoperations[,c("cruiseid", "siteid", "event.time", "deployment", "lat", "lon", "max.ctd.depth", "gm_1", "tot_1", "gm_2", "tot_2")]
 names(metadata)<- c("Cruise", "Station", "DateTime", "GearType", "lat", "lon", "MaxDepth", "Bongo1", "VolumeFiltered_B1", "Bongo2", "VolumeFiltered_B2")
 metadata$LatDec<- floor(metadata$lat/100)+(metadata$lat-floor(metadata$lat/100)*100)/60
 metadata$LonDec<- floor(metadata$lon/100)+(metadata$lon-floor(metadata$lon/100)*100)/60
 head(metadata)
-
-
-
 ```
-Data to give to Irina for backtracking:
+
+Here's a code chunk for handling the length data:
+```{r}
+# Wrangling the length data:
+davelengths<- read.csv('data/2016MeasuredFish_CMH200811.csv')
+chrissylengths<- read.xlsx('data/HB1603_6B3I_BFTlengths_20200811.xlsx', sheetIndex = 1)
+names(chrissylengths)[length(names(chrissylengths))]<- "Length"
+polanddata<- read.csv('data/HB1603_GU1608_IchData_7Nov2019.csv')
+
+# pull out the correct columns to be able to rbind davelengths and chrissylengths
+davelengths<- davelengths[,c('Cruise', 'Station', 'Gear', 'Fish', 'Length')]
+chrissylengths<- chrissylengths[,c('Cruise', 'Station', 'Gear', 'Fish', 'Length')]
+usalengths<- rbind(davelengths, chrissylengths)
+dim(usalengths)
+# fix the typo in geartype:
+usalengths$Gear[usalengths$Gear=='2n3']<- "2N3"
+
+# add lat, lon, and date to usalengths
+I<- which(usalengths$Gear=="2N3")
+query_stations<- unique(usalengths[I,c("Cruise", "Station")])
+J<- which(metadata$GearType=="CTD/IKMT Oblique")
+framenet_samples<- merge(query_stations, metadata[J, c("Cruise", "Station", "LatDec", "LonDec", "DateTime")])
+framenet_samples$Gear<- "2N3"
+# Next, for the baby Bongo samples:
+I<- which(usalengths$Gear=="2B1")
+query_stations<- unique(usalengths[I,c("Cruise", "Station")])
+J<- which(metadata$GearType=="CTD/Bongo Oblique")
+babybongo_samples<- merge(query_stations, metadata[J, c("Cruise", "Station", "LatDec", "LonDec", "DateTime")])
+babybongo_samples$Gear<- "2B1"
+# Next, for the 6B3I samples:
+I<- which(usalengths$Gear=="6B3I")
+query_stations<- unique(usalengths[I,c("Cruise", "Station")])
+J<- which(metadata$GearType=="CTD/Bongo Oblique")
+bongoI_samples<- merge(query_stations, metadata[J, c("Cruise", "Station", "LatDec", "LonDec", "DateTime")])
+bongoI_samples$Gear<- "6B3I"
+# Next, for the 6B3Z samples:
+I<- which(usalengths$Gear=="6B3Z")
+query_stations<- unique(usalengths[I,c("Cruise", "Station")])
+J<- which(metadata$GearType=="CTD/Bongo Oblique")
+bongoZ_samples<- merge(query_stations, metadata[J, c("Cruise", "Station", "LatDec", "LonDec", "DateTime")])
+bongoZ_samples$Gear<- "6B3Z"
+# paste all these rows together
+to_merge<- rbind(framenet_samples, babybongo_samples, bongoI_samples, bongoZ_samples)
+# merge metadata to usalengths:
+usalengths<- merge(usalengths, to_merge)
+head(usalengths)
+
+# Organize the Poland length data to match:
+polandlengths<- polanddata[polanddata$TAXA_NAME=="Thunnus thynnus",]
+polandlengths<- polandlengths[,c("CRUISE_NAME", "STATION", "GEAR", "COUNT_AT_LENGTH", "LENGTH")]
+polandlengths_long <- as.data.frame(lapply(polandlengths, rep, polandlengths$COUNT_AT_LENGTH))
+I<- which(names(polandlengths_long)=="COUNT_AT_LENGTH")
+polandlengths_long<- polandlengths_long[,-I]
+names(polandlengths_long)<- c("Cruise", "Station", "Gear", "Length")
+polandlengths_long$Fish<- NA
+# Bring in the lat, lon, and datetime fields from the metadata
+query_stations<- unique(polandlengths_long[,c("Cruise", "Station")])
+J<- which(metadata$GearType=="CTD/Bongo Oblique")
+bongoI_samples<- merge(query_stations, metadata[J, c("Cruise", "Station", "LatDec", "LonDec", "DateTime")])
+# merge back together:
+polandlengths_long<- merge(polandlengths_long,bongoI_samples)
+# fix the mis-labeled gear entries:
+polandlengths_long$Gear<- "6B3I"
+# reorder the columns to match usalengths so that i can rbind:
+polandlengths_long<- polandlengths_long[,names(usalengths)]
+
+all_lengths<- rbind(usalengths, polandlengths_long)
+```
+
+
+Construct an age-length relationship for the Slope Sea reads:
+```{r fig.keep='all'}
+# Join the otolith data and length data:
+agelength_data<- merge(otolith_data_clean, all_lengths)
+dim(agelength_data)
+
+# make a linear model of age and length
+model1<- lm(Length~Age, data=agelength_data)
+summary(model1)
+
+png(filename='results/SlopeSea2016_agelength.png', 
+    width=5, height=4, units='in', res=300, pointsize=12)
+plot(agelength_data$Age, agelength_data$Length, xlab='Daily Increments', 
+     ylab='Length (mm)', main='Slope Sea', pch=16, xlim=c(0,10), ylim=c(2, 8))
+exes<- 0:10
+whys1<- exes*summary(model1)$coefficients[2,1]+summary(model1)$coefficients[1,1]
+# add the line for the linear fit
+lines(exes, whys1)
+# add text for the best-fit line
+text(6, 3, 'L = 3.07 + 0.37*DI')
+dev.off()
+```
+
+
+Data to give to Irina to run backtracking:
+1. For aged larvae, we add 2 days post hatch before first ring (Yufera et al 2014), and 2 days of egg duration (Reglero et al 2018) to get the "days post spawning."
 
 ```{r}
 # first, take the ones that have ages:
-for_backtracking<- otolith_data_clean[,c("Cruise", "Station", "Gear", "FishNum", "Age")]
+for_backtracking<- otolith_data_clean[,c("Cruise", "Station", "Gear", "Fish", "Age")]
 head(for_backtracking)
 
 ## Add latitude and longitude of collection location, and date/time of collection
@@ -131,13 +246,99 @@ to_merge<- rbind(framenet_samples, babybongo_samples, bongoI_samples, bongoZ_sam
 # merge metadata to ages:
 for_backtracking<- merge(for_backtracking, to_merge)
 
-# Correct otolith "ages" to days post hatch: need to subtract 1 because I mark the edge of the core, and then add 2 for days post hatch (Malca et al. 2017 references Yufera et al 2014)
-for_backtracking$Age<- for_backtracking$Age+1
+# Correct otolith "ages" to days post spawning: add 2 for days post hatch (Malca et al. 2017 references Yufera et al 2014) and add 2 days for egg duration to convert Age to Days Post Spawning
+for_backtracking$DaysPostSpawn<- for_backtracking$Age+4
+
+# There's no use in running repeats, so take unique rows of the important columns:
+for_backtracking<- unique(for_backtracking[,c("Cruise", "Station", "DateTime", "LatDec", "LonDec", "DaysPostSpawn")])
+
 # write the csv out:
 write.csv(for_backtracking, file='results/SlopeSea2016_agedlarvae_forbacktracking.csv')
+```
 
+2. For larvae that we only have length, need to follow the same steps as from the PIPA project.
+  a. Construct age-length relationship from my Slope Sea reads
+  b. Use the residuals to define a normal distribution spreading around the best-fit line for age-length.
+  c. Sample from this distribution to define the age for each larva that we have a measured length.
+  d. Add 2 days post hatch before first ring (Yufera et al 2014), and 2 days of egg duration (Reglero et al 2018) to get the "days post spawning."
+
+```{r fig.keep='all'}
 #### Estimating ages for the rest of the larvae that have lengths:
+# collect all the lengths that don't have corresponding ages:
+no_age<- merge(all_lengths, otolith_data_clean, by=c("Cruise", "Station", "Gear", "Fish"), all.x=T)
+I<- which(!is.na(no_age$Age))
+no_age<- no_age[-I,c("Cruise","Station", "Gear", "Fish", "Length")]
+head(no_age)
 
+# Build the relationship with the residuals of the inverted age-length relationship:
+model2<- lm(Age~Length, data=agelength_data)
+summary(model2)
+# check visually if variance changes with time:
+plot(agelength_data$Length, model2$residuals, pch=19)
+lines(c(-1, 13), c(0,0))
+# check visually if residuals are normally distributed:
+hist(model2$residuals, breaks = c(-3.5, -2.5, -1.5, -.5, .5, 1.5, 2.5, 3.5, 4.5))
+# mean of residuals:
+mean(model1$residuals) ## should always be very close to 0!
+
+
+# For all fish, need to estimate an age based on the length
+no_age$EstDaysPostSpawn<-NA
+# pull out the slope and intercept for the model that predicts age from length
+slope_agelength<- model2$coefficients[2]
+int_agelength<- model2$coefficients[1]
+# standard deviation of residuals of length:
+sd_agelength<- sd(model2$residuals)
+# go through the list of lengths:
+for (i in 1:length(no_age$Cruise)){
+  ilength<- no_age$Length[i]
+  # estimate age on regression line
+  # also use the SD for the genus to pull 1 random number for a normal distribution
+  agest<- ilength*slope_agelength+int_agelength
+  agerand<- rnorm(1, agest, sd_agelength)
+  
+  # Round the randomly generated age to the nearest 1 day, and add 4 days to make it post spawn
+  if (agerand<0){
+    agerand<-0
+  }
+  no_age$EstDaysPostSpawn[i]<- round(agerand)+4
+}
+
+## Add latitude and longitude of collection location, and date/time of collection
+# First for the 2N3 samples:
+I<- which(no_age$Gear=="2N3")
+query_stations<- unique(no_age[I,c("Cruise", "Station")])
+J<- which(metadata$GearType=="CTD/IKMT Oblique")
+framenet_samples<- merge(query_stations, metadata[J, c("Cruise", "Station", "LatDec", "LonDec", "DateTime")])
+framenet_samples$Gear<- "2N3"
+# Next, for the baby Bongo samples:
+I<- which(no_age$Gear=="2B1")
+query_stations<- unique(no_age[I,c("Cruise", "Station")])
+J<- which(metadata$GearType=="CTD/Bongo Oblique")
+babybongo_samples<- merge(query_stations, metadata[J, c("Cruise", "Station", "LatDec", "LonDec", "DateTime")])
+babybongo_samples$Gear<- "2B1"
+# Next, for the 6B3I samples:
+I<- which(no_age$Gear=="6B3I")
+query_stations<- unique(no_age[I,c("Cruise", "Station")])
+J<- which(metadata$GearType=="CTD/Bongo Oblique")
+bongoI_samples<- merge(query_stations, metadata[J, c("Cruise", "Station", "LatDec", "LonDec", "DateTime")])
+bongoI_samples$Gear<- "6B3I"
+# Next, for the 6B3Z samples:
+I<- which(no_age$Gear=="6B3Z")
+query_stations<- unique(no_age[I,c("Cruise", "Station")])
+J<- which(metadata$GearType=="CTD/Bongo Oblique")
+bongoZ_samples<- merge(query_stations, metadata[J, c("Cruise", "Station", "LatDec", "LonDec", "DateTime")])
+bongoZ_samples$Gear<- "6B3Z"
+# paste all these rows together
+to_merge<- rbind(framenet_samples, babybongo_samples, bongoI_samples, bongoZ_samples)
+
+no_age<- merge(no_age, to_merge)
+
+# There's no use in running repeats, so take unique rows of the important columns:
+no_age<- unique(no_age[,c("Cruise", "Station", "DateTime", "LatDec", "LonDec", "EstDaysPostSpawn")])
+
+# write the csv out:
+write.csv(no_age, file='results/SlopeSea2016_estimatedlarvae_forbacktracking.csv')
 
 ```
 
