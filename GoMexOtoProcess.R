@@ -1,104 +1,126 @@
 ## GoMex otoliths from Katie:
 
-setwd('/Users/chrissy/JointProgram/SlopeSea/GoMex_oto_fromKatie/')
+library(xlsx)
 
 # load the data from the first read
-read1<- read.csv("GoMexOtolithReads1.csv")
+read1<- read.csv("data/GoMexOtolithReads1.csv")
 
 # load the data from the second read
-read2<- read.csv("GoMexOtolithReads2.csv")
+read2<- read.csv("data/GoMexOtolithReads2.csv")
 
 # Check which fish have Read1 and Read2 agreeing within 1d
 agecheck<- merge(read1[,c("Fish","Age")], read2[,c("Fish", "Age")], by="Fish")
 agecheck$d <- abs(agecheck$Age.y-agecheck$Age.x)
 agecheck$within1 <- 0
 agecheck$within1[agecheck$d<2] <- 1
+# print the ones that differ by more than 1 day:
+agecheck[agecheck$within1==0, "Fish"]
+# shuffle the order and print to a csv file:
+shuffledorder<- sample(agecheck[agecheck$within1==0, "Fish"])
+write.csv(shuffledorder, file='results/GoMexOto2016_read3order.csv')
+
+# bring in the third read and check those:
+# bring in the read3 data:
+read3<- read.xlsx('data/GoMexOtolithReads3.xlsx', sheetIndex = 1)
+names(read3)[length(names(read3))]<- "Age3"
+all3reads<- merge(agecheck, read3[,c("Fish", "Age3")])
+all3reads$diff1<- abs(all3reads$Age.x-all3reads$Age3)
+all3reads$diff2<- abs(all3reads$Age.y-all3reads$Age3)
+all3reads
+# This recovers all but the largest otolith into the dataset
+#change the column name back:
+names(read3)[length(names(read3))]<- "Age"
 
 # If the first and second read are within 1, keep second:
 # (We are assuming that skill increased with time spent reading)
-keepreads <- agecheck$Fish[agecheck$within1==1]
-toprocess <- read2[read2$Fish %in% keepreads, ]
+keepreads<- agecheck$Fish[agecheck$within1==1]
+GOM_oto_data<- read2[read2$Fish %in% keepreads, ]
+# If the third read matches within 1 day to either the 
+# first or the second read, keep the third:
+keepreads<- which(all3reads$diff1<=1 | all3reads$diff2<=1)
+GOM_oto_data<- rbind(GOM_oto_data, read3[keepreads,])
+
 # correct the Age to be Increments:
-toprocess$Increments<- toprocess$Age-1
+GOM_oto_data$Increments<- GOM_oto_data$Age-1
+# if increments were already 0, should not be -1:
+GOM_oto_data$Increments[GOM_oto_data$Increments<0]<- 0
 
 # read in size data
-require(xlsx)
-seamapdata<- read.xlsx('BFT2016_SEAMAP_Metadata_forCHernandez_27Mar2018.xlsx', 1)
+seamapdata<- read.xlsx('data/BFT2016_SEAMAP_Metadata_forCHernandez_27Mar2018.xlsx', 1)
 seamapdata<- seamapdata[,c('ELH_ID', 'SL_mm_EtOH', 'Slat', 'Slon')]
 head(seamapdata)
 
-# make matching columns in toprocess and seamapdata that contain the 4-digit fish ID:
-toprocess$Fish<- as.character(toprocess$Fish)
-sampleid<- strsplit(toprocess$Fish, '_')
+# make matching columns in GOM_oto_data and seamapdata that contain the 4-digit fish ID:
+GOM_oto_data$Fish<- as.character(GOM_oto_data$Fish)
+sampleid<- strsplit(GOM_oto_data$Fish, '_')
 Cruise<- sapply(sampleid, '[', 1)
 Fish<- sapply(sampleid, '[', 2)
-toprocess$Fish<- sapply(Fish, substr, start=1, stop=4)
+GOM_oto_data$Fish<- sapply(Fish, substr, start=1, stop=4)
 
 seamapdata$Fish<- sapply(seamapdata$ELH_ID, substr, start=6, stop=9)
 
 # append size and lat/lon to the otolith reads:
-toprocess<- merge(toprocess, seamapdata, by='Fish')
-toprocess<- toprocess[,-2] # get rid of the 'n' column
-head(toprocess) # check that all the otolith data is still there.
+GOM_oto_data<- merge(GOM_oto_data, seamapdata, by='Fish')
+GOM_oto_data<- GOM_oto_data[,-2] # get rid of the 'n' column
+head(GOM_oto_data) # check that all the otolith data is still there.
 
-# plot of size at radius (to R graphics device)
-plot(toprocess$SL_mm_EtOH, toprocess$Radius, pch=19)
+# plot of size at radius
+plot(GOM_oto_data$SL_mm_EtOH, GOM_oto_data$Radius, pch=19)
 
 # plot of size at age (to file)
-png(filename='GoMex_oto_fromKatie/GoM2016SizeAtAge_20180517_dashedonly.png', height=6.5, width=7.5, units= 'in', res=300)
-toplot<- toprocess[toprocess$Increments>0,]
+png(filename='results/GoMex2016_SizeAtAge.png', height=6.5, width=7.5, units= 'in', res=300)
+toplot<- GOM_oto_data
 plot(toplot$Increments, toplot$SL_mm_EtOH, xlab='Daily Increments', 
      ylab='Standard Length (mm)', pch=19, cex=1.25, cex.lab=1.5, cex.axis=1.5)
-model<- lm(SL_mm_EtOH~Increments, data=toplot)
-summary(model)
-exes<- 1:14
-whys<- summary(model)$coefficients[1,1]+summary(model)$coefficients[2,1]*exes
+GOM_agelength<- lm(SL_mm_EtOH~Increments, data=toplot)
+summary(GOM_agelength)
+exes<- 0:14
+whys<- summary(GOM_agelength)$coefficients[1,1]+summary(GOM_agelength)$coefficients[2,1]*exes
 lines(exes, whys, lty=2)
-text(1, 6.75, "SL=2.5+0.36*DI", pos=4)
+text(1, 6.75, "SL=2.85+0.37*DI", pos=4)
 # line for fish up to 8 increments, to match with the SS data:
-model2<- lm(SL_mm_EtOH~Increments, data=toplot[toplot$Increments<9,])
-summary(model2)
-exes2<- 1:8
-whys2<- summary(model2)$coefficients[1,1]+summary(model2)$coefficients[2,1]*exes2
+GOM_agelength_sub8inc<- lm(SL_mm_EtOH~Increments, data=toplot[toplot$Increments<9,])
+summary(GOM_agelength_sub8inc)
+exes2<- 0:8
+whys2<- summary(GOM_agelength_sub8inc)$coefficients[1,1]+summary(GOM_agelength_sub8inc)$coefficients[2,1]*exes2
 lines(exes2, whys2, lwd=2)
 text(1, 7.5, "SL=2.47+0.46*DI", pos=4, cex=1.5)
 dev.off()
 
 # radius at age (to get rid of shrinkage differences)
-png(filename='GoMex_oto_fromKatie/GoM2016RadiusAtAge_20180515.png', height=6.5, width=7.5, units= 'in', res=300)
-toplot<- toprocess[toprocess$Increments>0,]
+png(filename='results/GoM2016_RadiusAtAge.png', height=6.5, width=7.5, units= 'in', res=300)
+toplot<- GOM_oto_data
 plot(toplot$Increments, toplot$Radius, xlab='Daily Increments', 
      ylab='Otolith Radius (um)', pch=19)
-model<- lm(Radius~Increments, data=toplot)
-summary(model)
+GOM_radatage<- lm(Radius~Increments, data=toplot)
+summary(GOM_radatage)
 exes<- 0:14
-whys<- summary(model)$coefficients[1,1]+summary(model)$coefficients[2,1]*exes
+whys<- summary(GOM_radatage)$coefficients[1,1]+summary(GOM_radatage)$coefficients[2,1]*exes
 lines(exes, whys)
-text(1, 55, "Radius=8.13+3.35*DI", pos=4, cex=1.5)
+text(1, 55, "Radius=9.44+3.16*DI", pos=4, cex=1.5)
+# line for fish up to 8 increments, to match with the SS data:
+GOM_radatage_sub8inc<- lm(Radius~Increments, data=toplot[toplot$Increments<9,])
+summary(GOM_radatage_sub8inc)
+exes2<- 1:8
+whys2<- summary(GOM_radatage_sub8inc)$coefficients[1,1]+summary(GOM_radatage_sub8inc)$coefficients[2,1]*exes2
+lines(exes2, whys2, lty=2)
+text(1, 50, "Radius=9.81+3.05*DI", pos=4)
 dev.off()
 
-# line for fish up to 8 increments, to match with the SS data:
-model2<- lm(Radius~Increments, data=toplot[toplot$Increments<9,])
-summary(model2)
-exes2<- 1:8
-whys2<- summary(model2)$coefficients[1,1]+summary(model2)$coefficients[2,1]*exes2
-lines(exes2, whys2, lty=2)
-text(1, 50, "Radius=7.414+3.50*DI", pos=4)
-
 # calculate increment widths:
-I<- which(names(toprocess)=='ToRing14') #bc the max age is 13
-J<- which(names(toprocess)=='ToRing2') #bc I mark the edge of the core
+I<- which(names(GOM_oto_data)=='ToRing14') #bc the max age is 13
+J<- which(names(GOM_oto_data)=='ToRing2') #bc I mark the edge of the core
 # radii to outer and inner edges of each increment
-outer<- toprocess[,J:I]
-inner<- toprocess[,(J-1):(I-1)]
+outer<- GOM_oto_data[,J:I]
+inner<- GOM_oto_data[,(J-1):(I-1)]
 # increment width
 incwidthGOM<- outer-inner
-incwidthGOM<- cbind(toprocess$Fish, incwidthGOM)
+incwidthGOM<- cbind(GOM_oto_data$Fish, incwidthGOM)
 names(incwidthGOM)<- c("Fish", "Inc1", "Inc2", "Inc3", "Inc4", "Inc5", "Inc6", "Inc7",
                       "Inc8", "Inc9", "Inc10", "Inc11", "Inc12", "Inc13")
 
 # Make a second increment width dataframe with only fish that have 8 increments or fewer
-subdata<- toprocess[toprocess$Increments<9,]
+subdata<- GOM_oto_data[GOM_oto_data$Increments<9,]
 # calculate increment widths:
 I<- which(names(subdata)=='ToRing9') #bc the max age is 8
 J<- which(names(subdata)=='ToRing2') #bc I mark the edge of the core
@@ -106,46 +128,10 @@ J<- which(names(subdata)=='ToRing2') #bc I mark the edge of the core
 outer<- subdata[,J:I]
 inner<- subdata[,(J-1):(I-1)]
 # increment width
-incwidthGOM2<- outer-inner
-incwidthGOM2<- cbind(subdata$Fish, incwidthGOM2)
-names(incwidthGOM2)<- c("Fish", "Inc1", "Inc2", "Inc3", "Inc4", "Inc5", "Inc6", "Inc7",
+incwidthGOM_sub8inc<- outer-inner
+incwidthGOM_sub8inc<- cbind(subdata$Fish, incwidthGOM_sub8inc)
+names(incwidthGOM_sub8inc)<- c("Fish", "Inc1", "Inc2", "Inc3", "Inc4", "Inc5", "Inc6", "Inc7",
                        "Inc8")
 
-## make a map of GoMex:
-library(oce)
-library(ocedata)
-
-# Load in the coastlines
-data(coastlineWorldFine, package="ocedata")
-# read in the kickass bathymetry
-library(ncdf4)
-ncid<- nc_open('GoMexBathymetry/GEBCO_2014_2D_-101.9175_17.1845_-76.1408_31.6019.nc')
-print(ncid)
-lat<- ncvar_get(ncid, varid='lat')
-lon<- ncvar_get(ncid, varid='lon')
-elev<- ncvar_get(ncid, varid='elevation')
-nc_close(ncid)
-
-# tuna sampled for otoliths:
-OR317<- toprocess[,c("Fish", "Slat", "Slon")]
-head(OR317)
-toplot<- aggregate(Fish~Slat+Slon, data=OR317, FUN = length)
-
-plot(coastlineWorldFine, longitudelim=c(-81, -97), latitudelim=c(25, 30))
-contour(lon, lat, elev, levels=c(-100, -200, -1000, -2000), add=TRUE, 
-        drawlabels=FALSE, lwd=0.75, col='dark grey')
-onefour<- toplot[toplot$Fish>0 & toplot$Fish<=4,]
-fivenine<- toplot[toplot$Fish>4 & toplot$Fish<10,]
-tenplus<- toplot[toplot$Fish>9,]
-points(onefour$Slon, onefour$Slat, cex=1.5, col='blue', lwd=2)
-points(fivenine$Slon, fivenine$Slat, cex=3, col='blue', lwd=2)
-points(tenplus$Slon, tenplus$Slat, cex=4.5, col='blue', lwd=2)
-# add a legend
-polygon(c(-82.5, -82.5, -86.5, -86.5), c(20, 25.5, 25.5, 20), col='white')
-legend(-86, 25.5, legend=c('1-4', '5-9', '10+'), 
-       col=c('blue', 'blue', 'blue'), pch=c(1, 1, 1), 
-       pt.cex=rep(NA, 3), bty='n', 
-       title='N for aging')
-legend(-86.1, 25, legend=rep(NA, 3), 
-       col=c('blue', 'blue', 'blue'), pch=c(1, 1, 1), 
-       pt.cex=c(1.5, 3, 4.5), pt.lwd=c(2,2,2), bty='n')
+rm(inner, outer, exes, whys, exes2, whys2, agecheck, all3reads, read1, read2, 
+   read3, sampleid, subdata, toplot, Cruise, Fish, I, J, keepreads, shuffledorder)
