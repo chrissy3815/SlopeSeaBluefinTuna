@@ -67,46 +67,6 @@ head(GOM_oto_data) # check that all the otolith data is still there.
 # plot of size at radius
 plot(GOM_oto_data$SL_mm_EtOH, GOM_oto_data$Radius, pch=19)
 
-# plot of size at age (to file)
-png(filename='results/GoMex2016_SizeAtAge.png', height=6.5, width=7.5, units= 'in', res=300)
-toplot<- GOM_oto_data
-plot(toplot$Increments, toplot$SL_mm_EtOH, xlab='Daily Increments', 
-     ylab='Standard Length (mm)', pch=19, cex=1.25, cex.lab=1.5, cex.axis=1.5)
-GOM_agelength<- lm(SL_mm_EtOH~Increments, data=toplot)
-summary(GOM_agelength)
-exes<- 0:14
-whys<- summary(GOM_agelength)$coefficients[1,1]+summary(GOM_agelength)$coefficients[2,1]*exes
-lines(exes, whys, lty=2)
-text(1, 6.75, "SL=2.85+0.37*DI", pos=4)
-# line for fish up to 8 increments, to match with the SS data:
-GOM_agelength_sub8inc<- lm(SL_mm_EtOH~Increments, data=toplot[toplot$Increments<9,])
-summary(GOM_agelength_sub8inc)
-exes2<- 0:8
-whys2<- summary(GOM_agelength_sub8inc)$coefficients[1,1]+summary(GOM_agelength_sub8inc)$coefficients[2,1]*exes2
-lines(exes2, whys2, lwd=2)
-text(1, 7.5, "SL=2.47+0.46*DI", pos=4, cex=1.5)
-dev.off()
-
-# radius at age (to get rid of shrinkage differences)
-png(filename='results/GoM2016_RadiusAtAge.png', height=6.5, width=7.5, units= 'in', res=300)
-toplot<- GOM_oto_data
-plot(toplot$Increments, toplot$Radius, xlab='Daily Increments', 
-     ylab='Otolith Radius (um)', pch=19)
-GOM_radatage<- lm(Radius~Increments, data=toplot)
-summary(GOM_radatage)
-exes<- 0:14
-whys<- summary(GOM_radatage)$coefficients[1,1]+summary(GOM_radatage)$coefficients[2,1]*exes
-lines(exes, whys)
-text(1, 55, "Radius=9.44+3.16*DI", pos=4, cex=1.5)
-# line for fish up to 8 increments, to match with the SS data:
-GOM_radatage_sub8inc<- lm(Radius~Increments, data=toplot[toplot$Increments<9,])
-summary(GOM_radatage_sub8inc)
-exes2<- 1:8
-whys2<- summary(GOM_radatage_sub8inc)$coefficients[1,1]+summary(GOM_radatage_sub8inc)$coefficients[2,1]*exes2
-lines(exes2, whys2, lty=2)
-text(1, 50, "Radius=9.81+3.05*DI", pos=4)
-dev.off()
-
 # calculate increment widths:
 I<- which(names(GOM_oto_data)=='ToRing14') #bc the max age is 13
 J<- which(names(GOM_oto_data)=='ToRing2') #bc I mark the edge of the core

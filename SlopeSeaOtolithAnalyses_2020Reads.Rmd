@@ -174,12 +174,10 @@ J<- which(metadata$GearType=="CTD/Bongo Oblique")
 bongoI_samples<- merge(query_stations, metadata[J, c("Cruise", "Station", "LatDec", "LonDec", "DateTime")])
 # merge back together:
 polandlengths_long<- merge(polandlengths_long,bongoI_samples)
-# fix the mis-labeled gear entries:
-polandlengths_long$Gear<- "6B3I"
 # reorder the columns to match usalengths so that i can rbind:
 polandlengths_long<- polandlengths_long[,names(usalengths)]
 
-all_lengths<- rbind(usalengths, polandlengths_long)
+all_lengths_SS<- rbind(usalengths, polandlengths_long)
 
 # Clean up the workspace a bit:
 rm(babybongo_samples, query_stations, bongoZ_samples, bongoI_samples, framenet_samples, to_merge)
@@ -187,21 +185,41 @@ rm(polandlengths, polanddata)
 rm(all3reads, bothreads, fishID, read1, read2, read3)
 ```
 
+Run the Gulf of Mexico otolith processing script:
+```{r}
+source('GoMexOtoProcess.R')
+```
 
-Construct an age-length relationship for the Slope Sea reads, and a radius-at-age relationship:
+Construct age-length relationships for the Slope Sea reads:
 ```{r fig.keep='all'}
 # Join the otolith data and length data:
-SS_oto_data<- merge(SS_oto_data, all_lengths)
+SS_oto_data<- merge(SS_oto_data, all_lengths_SS)
 dim(SS_oto_data)
 
 # make a linear model of age and length
 SS_agelength<- lm(Length~Increments, data=SS_oto_data)
 summary(SS_agelength)
+# make a second model for only individuals with 0-4 increments
+SS_agelength_sub4inc<- lm(Length~Increments, data=SS_oto_data[SS_oto_data$Increments<=4,])
+summary(SS_agelength_sub4inc)
 
-png(filename='results/SlopeSea2016_agelength.png', 
-    width=5, height=4, units='in', res=300, pointsize=12)
+# build linear models for the GoMex:
+GOM_agelength<- lm(SL_mm_EtOH~Increments, data=GOM_oto_data)
+summary(GOM_agelength)
+GOM_agelength_sub8inc<- lm(SL_mm_EtOH~Increments, data=GOM_oto_data[GOM_oto_data$Increments<9,])
+summary(GOM_agelength_sub8inc)
+GOM_agelength_sub4inc<- lm(SL_mm_EtOH~Increments, data=GOM_oto_data[GOM_oto_data$Increments<=4,])
+summary(GOM_agelength_sub4inc)
+```
+
+Slope Sea plots:
+
+```{r fig.keep='all'}
+png(filename='results/SlopeSea2016_agelength.png', height=6.5, width=7.5, 
+    units= 'in', res=300)
 plot(SS_oto_data$Increments, SS_oto_data$Length, xlab='Daily Increments', 
-     ylab='Length (mm)', main='Slope Sea', pch=16, xlim=c(0,10), ylim=c(2, 8))
+     ylab='Standard Length (mm)', pch=19, cex=1.25, cex.lab=1.5, cex.axis=1.5,
+     xlim=c(0,13), ylim=c(2, 8))
 exes<- 0:10
 whys<- exes*summary(SS_agelength)$coefficients[2,1]+summary(SS_agelength)$coefficients[1,1]
 # add the line for the linear fit
@@ -211,7 +229,8 @@ text(6, 3, 'L = 3.07 + 0.37*DI')
 dev.off()
 
 # radius at age:
-png(filename='results/SlopeSea016_RadiusAtAge.png', height=6.5, width=7.5, units= 'in', res=300)
+png(filename='results/SlopeSea016_RadiusAtAge.png', height=6.5, width=7.5, 
+    units= 'in', res=300)
 toplot<- SS_oto_data
 plot(toplot$Increments, toplot$Radius, xlab='Daily Increments', 
      ylab='Otolith Radius (um)', pch=19)
@@ -222,17 +241,59 @@ whys<- summary(SS_radatage)$coefficients[1,1]+summary(SS_radatage)$coefficients[
 lines(exes, whys)
 text(1, 35, "Radius=10.88+2.64*DI", pos=4, cex=1.5)
 dev.off()
-```
-Run the Gulf of Mexico otolith processing script:
-```{r}
-source('GoMexOtoProcess.R')
+
 ```
 
-
-
-Calculate increment widths for Slope Sea:
+Gulf of Mexico otolith figures:
 ```{r}
-# calculate increment widths:
+
+# plot of size at age (to file)
+png(filename='results/GoMex2016_SizeAtAge_2.png', height=6.5, width=7.5, 
+    units= 'in', res=300)
+plot(GOM_oto_data$Increments, GOM_oto_data$SL_mm_EtOH, xlab='Daily Increments', 
+     ylab='Standard Length (mm)', pch=19, cex=1.25, cex.lab=1.5, cex.axis=1.5,
+     xlim=c(0,13), ylim=c(2, 8))
+exes<- 0:14
+whys<- summary(GOM_agelength)$coefficients[1,1]+summary(GOM_agelength)$coefficients[2,1]*exes
+lines(exes, whys, lwd=1.5, lty=3)
+# text(1, 6.75, "SL=2.85+0.37*DI", pos=4)
+# line for fish up to 8 increments, to match with the SS data:
+whys2<- summary(GOM_agelength_sub8inc)$coefficients[1,1]+summary(GOM_agelength_sub8inc)$coefficients[2,1]*exes
+lines(exes, whys2, lwd=1.5)
+# text(1, 7.5, "SL=2.47+0.46*DI", pos=4, cex=1.5)
+# line for fish up to 4 increments:
+whys3<- summary(GOM_agelength_sub4inc)$coefficients[1,1]+summary(GOM_agelength_sub4inc)$coefficients[2,1]*exes
+lines(exes, whys3, lwd=1.5, lty=2)
+# add lines in grey for the Slope Sea:
+whys<- 
+dev.off()
+
+# radius at age (to get rid of shrinkage differences)
+png(filename='results/GoM2016_RadiusAtAge.png', height=6.5, width=7.5, 
+    units= 'in', res=300)
+plot(GOM_oto_data$Increments, GOM_oto_data$Radius, xlab='Daily Increments', 
+     ylab='Otolith Radius (um)', pch=19)
+GOM_radatage<- lm(Radius~Increments, data=GOM_oto_data)
+summary(GOM_radatage)
+exes<- 0:14
+whys<- summary(GOM_radatage)$coefficients[1,1]+summary(GOM_radatage)$coefficients[2,1]*exes
+lines(exes, whys)
+text(1, 55, "Radius=9.44+3.16*DI", pos=4, cex=1.5)
+# line for fish up to 8 increments, to match with the SS data:
+GOM_radatage_sub8inc<- lm(Radius~Increments, data=GOM_oto_data[GOM_oto_data$Increments<9,])
+summary(GOM_radatage_sub8inc)
+exes2<- 1:8
+whys2<- summary(GOM_radatage_sub8inc)$coefficients[1,1]+summary(GOM_radatage_sub8inc)$coefficients[2,1]*exes2
+lines(exes2, whys2, lty=2)
+text(1, 50, "Radius=9.81+3.05*DI", pos=4)
+dev.off()
+```
+
+
+Increment width figure:
+```{r}
+
+# calculate increment widths for Slope Sea:
 I<- which(names(SS_oto_data)=='ToRing9') #bc the max age is 8
 J<- which(names(SS_oto_data)=='ToRing2') #bc I mark the edge of the core
 # radii to outer and inner edges of each increment
@@ -243,51 +304,58 @@ incwidthSS<- outer-inner
 incwidthSS<- cbind(SS_oto_data$Fish, incwidthSS)
 names(incwidthSS)<- c("Fish", "Inc1", "Inc2", "Inc3", "Inc4", "Inc5", "Inc6", "Inc7",
                       "Inc8")
-
 rm(inner, outer)
+
+# Daily increment widths: only for increments with n=3 or more
+counts<- apply(incwidthSS, 2, function(x){sum(!is.na(x))})
+I<- which(counts>=3)
+subincSS<- incwidthSS[,I]
+means<- apply(subincSS[,-1], 2, FUN=mean, na.rm=TRUE)
+SE<- function(x){sd(x, na.rm=TRUE)/sqrt(sum(!is.na(x)))}
+serror<- apply(subincSS[,-1], 2, FUN=SE)
+maxes<- means+serror
+
+# do the same for the GoM, but only fish with 8 increments or less
+counts<- apply(incwidthGOM_sub8inc, 2, function(x){sum(!is.na(x))})
+I<- which(counts>=3)
+subincGOM<- incwidthGOM_sub8inc[,I]
+meansGOM<- apply(subincGOM[,-1], 2, FUN=mean, na.rm=TRUE)
+serrorGOM<- apply(subincGOM[,-1], 2, FUN=SE)
+maxesGOM<- meansGOM+serrorGOM
+xlimz<- c(0.5,8.5)
+ylimz<- c(0, max(c(maxes, maxesGOM), na.rm=TRUE))
+
+png(filename='results/SS_GOM_2016_IncWidth.png', height=6.5, width=7.5, units= 'in', res=300)
+exes<- seq(from=0.9, by=1, length.out = length(means))
+plot(exes, means, pch=19, xlab='Increment', ylab='Mean Increment Width (um)',
+     xlim=xlimz, ylim=ylimz, cex=1.25, cex.lab=1.5, cex.axis=1.5, 
+     xaxp=c(1,8,7))
+arrows(exes, means-serror, exes, means+serror, length=0.05, angle=90, code=3)
+exes<- seq(from=1.1, by=1, length.out = length(meansGOM))
+points(exes, meansGOM, pch=2, cex=1.25)
+arrows(exes, meansGOM-serrorGOM, exes, meansGOM+serrorGOM, length=0.05, angle=90, code=3)
+legend('topleft', legend=c('Slope Sea', 'Gulf of Mexico'), pch=c(19, 2), cex=1.5)
+dev.off()
+
 ```
 
-Figures that combine Slope Sea and Gulf of Mexico data:
 ```{r}
-png(filename='results/SS_GOM_2016_agelength.png', 
-    height=6.5, width=7.5, units= 'in', res=300, pointsize=12)
-plot(GOM_oto_data$Increments, GOM_oto_data$SL_mm_EtOH, pch=19, col='grey', 
-     xlab='Daily Increments',  ylab='Length (mm)', main='Slope Sea', 
-     xlim=c(0,14), ylim=c(1, 9), cex=1.25, cex.lab=1.5, cex.axis=1.5)
-exes<- 0:15
-whys<- exes*summary(GOM_agelength)$coefficients[2,1]+summary(GOM_agelength)$coefficients[1,1]
-lines(exes, whys, col='grey25')
-text(1, 7.5, "SL=2.85+0.37*DI", pos=4, col='grey25')
-# line for the sub8inc data:
-exes<- 0:8
-whys<- summary(GOM_agelength_sub8inc)$coefficients[1,1]+summary(GOM_agelength_sub8inc)$coefficients[2,1]*exes
-lines(exes, whys, col='grey25')
-text(1, 6.75, "SL=2.47+0.46*DI", pos=4, cex=1.2, col='grey25')
-# add SS data:
-points(SS_oto_data$Increments, SS_oto_data$Length, pch=1)
-whys<- exes*summary(SS_agelength)$coefficients[2,1]+summary(SS_agelength)$coefficients[1,1]
-# add the line for the linear fit
-lines(exes, whys)
-# add text for the best-fit line for Slope Sea:
-text(8, 3, 'SL = 3.07 + 0.37*DI')
-dev.off()
-
-# radius at age:
-png(filename='results/SlopeSea016_RadiusAtAge.png', height=6.5, width=7.5, units= 'in', res=300)
-toplot<- SS_oto_data
-plot(toplot$Increments, toplot$Radius, xlab='Daily Increments', 
-     ylab='Otolith Radius (um)', pch=19)
-SS_radatage<- lm(Radius~Increments, data=toplot)
-summary(SS_radatage)
-exes<- 0:14
-whys<- summary(SS_radatage)$coefficients[1,1]+summary(SS_radatage)$coefficients[2,1]*exes
-lines(exes, whys)
-text(1, 35, "Radius=10.88+2.64*DI", pos=4, cex=1.5)
-dev.off()
-
-
+## ANCOVA to test for significantly different slopes in the growth lines: 
+# fish with fewer than 8 increments from GoMex and SS
+# get the columns we want for SS:
+subSS<- SS_oto_data[SS_oto_data$Increments<9,c("Increments", "Length")]
+subSS$Region<- "SS"
+# get the columns we want for GoMex:
+subGOM<- GOM_oto_data[GOM_oto_data$Increments<9, c("Increments", "SL_mm_EtOH")]
+names(subGOM)<- c("Increments", "Length")
+subGOM$Region<- "GoMex"
+foraov<- rbind(subSS, subGOM)
+# run the ancova:
+aovmodel<- aov(Length~Increments*Region, data=foraov)
+summary(aovmodel)
+aovmodel2<- aov(Length~Increments+Region, data=foraov)
+summary(aovmodel2)
 ```
-
 
 
 Data to give to Irina to run backtracking:
@@ -344,11 +412,13 @@ write.csv(for_backtracking, file='results/SlopeSea2016_agedlarvae_forbacktrackin
   b. Use the residuals to define a normal distribution spreading around the best-fit line for age-length.
   c. Sample from this distribution to define the age for each larva that we have a measured length.
   d. Add 2 days post hatch before first ring (Yufera et al 2014), and 2 days of egg duration (Reglero et al 2018) to get the "days post spawning."
+  
+I'm not sure if I broke this section while adjusting code related to whether the "6B3" samples in the Poland dataset were mislabeled or not. Should check this when I'm cleaning up code for posting.
 
 ```{r fig.keep='all'}
 #### Estimating ages for the rest of the larvae that have lengths:
 # collect all the lengths that don't have corresponding ages:
-no_age<- merge(all_lengths, SS_oto_data, by=c("Cruise", "Station", "Gear", "Fish"), all.x=T)
+no_age<- merge(all_lengths_SS, SS_oto_data, by=c("Cruise", "Station", "Gear", "Fish"), all.x=T)
 I<- which(!is.na(no_age$Age))
 no_age<- no_age[-I,c("Cruise","Station", "Gear", "Fish", "Length")]
 head(no_age)
@@ -412,6 +482,12 @@ query_stations<- unique(no_age[I,c("Cruise", "Station")])
 J<- which(metadata$GearType=="CTD/Bongo Oblique")
 bongoZ_samples<- merge(query_stations, metadata[J, c("Cruise", "Station", "LatDec", "LonDec", "DateTime")])
 bongoZ_samples$Gear<- "6B3Z"
+# Next, for the 6B3 samples in the poland dataset:
+I<- which(no_age$Gear=="6B3")
+query_stations<- unique(no_age[I,c("Cruise", "Station")])
+J<- which(metadata$GearType=="CTD/Bongo Oblique")
+bongoZ_samples<- merge(query_stations, metadata[J, c("Cruise", "Station", "LatDec", "LonDec", "DateTime")])
+bongoZ_samples$Gear<- "6B3"
 # paste all these rows together
 to_merge<- rbind(framenet_samples, babybongo_samples, bongoI_samples, bongoZ_samples)
 
