@@ -90,8 +90,7 @@ inner<- subdata[,(J-1):(I-1)]
 # increment width
 incwidthGOM_sub8inc<- outer-inner
 incwidthGOM_sub8inc<- cbind(subdata$Fish, incwidthGOM_sub8inc)
-names(incwidthGOM_sub8inc)<- c("Fish", "Inc1", "Inc2", "Inc3", "Inc4", "Inc5", "Inc6", "Inc7",
-                       "Inc8")
+names(incwidthGOM_sub8inc)<- c("Fish", "Inc1", "Inc2", "Inc3", "Inc4", "Inc5", "Inc6", "Inc7", "Inc8")
 
-rm(inner, outer, exes, whys, exes2, whys2, agecheck, all3reads, read1, read2, 
-   read3, sampleid, subdata, toplot, Cruise, Fish, I, J, keepreads, shuffledorder)
+rm(inner, outer, agecheck, all3reads, read1, read2, read3, sampleid, 
+   subdata, Cruise, Fish, I, J, keepreads, shuffledorder)
