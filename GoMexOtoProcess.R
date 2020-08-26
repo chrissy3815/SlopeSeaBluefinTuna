@@ -1,6 +1,6 @@
 ## GoMex otoliths from Katie:
 
-library(xlsx)
+library(readxl)
 
 # load the data from the first read
 read1<- read.csv("data/GoMexOtolithReads1.csv")
@@ -21,7 +21,7 @@ write.csv(shuffledorder, file='results/GoMexOto2016_read3order.csv')
 
 # bring in the third read and check those:
 # bring in the read3 data:
-read3<- read.xlsx('data/GoMexOtolithReads3.xlsx', sheetIndex = 1)
+read3<- read_excel('data/GoMexOtolithReads3.xlsx', sheet = 1)
 names(read3)[length(names(read3))]<- "Age3"
 all3reads<- merge(agecheck, read3[,c("Fish", "Age3")])
 all3reads$diff1<- abs(all3reads$Age.x-all3reads$Age3)
@@ -46,7 +46,7 @@ GOM_oto_data$Increments<- GOM_oto_data$Age-1
 GOM_oto_data$Increments[GOM_oto_data$Increments<0]<- 0
 
 # read in size data
-seamapdata<- read.xlsx('data/BFT2016_SEAMAP_Metadata_forCHernandez_27Mar2018.xlsx', 1)
+seamapdata<- read_excel('data/BFT2016_SEAMAP_Metadata_forCHernandez_27Mar2018.xlsx', 1)
 seamapdata<- seamapdata[,c('ELH_ID', 'SL_mm_EtOH', 'Slat', 'Slon')]
 head(seamapdata)
 

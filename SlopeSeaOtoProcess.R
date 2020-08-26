@@ -1,19 +1,19 @@
 # Slope Sea otolith processing:
 
 # required packages:
-require(xlsx)
+library(readxl)
 
 ## First, we need to shuffle the read order for read 2:
-read1<- read.xlsx('data/SlopeSeaOto2016_FullRead_1.xlsx', sheetIndex = 1)
+read1<- read_excel('data/SlopeSeaOto2016_FullRead_1.xlsx')
 filenames<- read1$Fish
 shuffledorder<- sample(filenames)
 write.csv(shuffledorder, file='results/SlopeSeaOto_2020Reads_read2order.csv')
 
 ## Next, some QC checks on reads 1 and 2:
 # bring in the data from otoliths read 1:
-read1<- read.xlsx('data/SlopeSeaOto2016_FullRead_1.xlsx', sheetIndex = 1)
+read1<- read_excel('data/SlopeSeaOto2016_FullRead_1.xlsx', sheet = 1)
 # bring in the data from otoliths read 2:
-read2<- read.xlsx('data/SlopeSeaOto2016_FullRead_2_retakes.xlsx', sheetIndex = 1)
+read2<- read_excel('data/SlopeSeaOto2016_FullRead_2_retakes.xlsx', sheet = 1)
 names(read2)[length(names(read2))]<- "Age2"
 
 # use merge to combine both reads:
@@ -30,7 +30,7 @@ write.csv(shuffledorder2, file='results/SlopeSeaOto_2020Reads_read3order.csv')
 
 ##Check read 3:
 # bring in the read3 data:
-read3<- read.xlsx('data/SlopeSeaOto2016_FullRead_3.xlsx', sheetIndex = 1)
+read3<- read_excel('data/SlopeSeaOto2016_FullRead_3.xlsx', sheet = 1)
 names(read3)[length(names(read3))]<- "Age3"
 all3reads<- merge(bothreads, read3[,c("Fish", "Age3")])
 all3reads$diff1<- abs(all3reads$Age-all3reads$Age3)
@@ -85,16 +85,20 @@ SS_oto_data$Fish<- as.numeric(fishNum)
 head(SS_oto_data)
 
 ## Other metadata from the tows:
-slopeseaoperations<- read.xlsx('data/SlopeSeaOperations.xlsx', sheetIndex = 2)
-metadata<- slopeseaoperations[,c("cruiseid", "siteid", "event.time", "deployment", "lat", "lon", "max.ctd.depth", "gm_1", "tot_1", "gm_2", "tot_2")]
-names(metadata)<- c("Cruise", "Station", "DateTime", "GearType", "lat", "lon", "MaxDepth", "Bongo1", "VolumeFiltered_B1", "Bongo2", "VolumeFiltered_B2")
+slopeseaoperations<- read_excel('data/SlopeSeaOperations.xlsx', sheet = 2)
+metadata<- slopeseaoperations[,c("cruiseid", "siteid", "event time", 
+                                 "deployment", "lat", "lon", "max ctd depth", 
+                                 "gm_1", "tot_1", "gm_2", "tot_2")]
+names(metadata)<- c("Cruise", "Station", "DateTime", "GearType", "lat", "lon", 
+                    "MaxDepth", "Bongo1", "VolumeFiltered_B1", "Bongo2", 
+                    "VolumeFiltered_B2")
 metadata$LatDec<- floor(metadata$lat/100)+(metadata$lat-floor(metadata$lat/100)*100)/60
 metadata$LonDec<- floor(metadata$lon/100)+(metadata$lon-floor(metadata$lon/100)*100)/60
 head(metadata)
 
 ## Wrangling the length data:
 davelengths<- read.csv('data/2016MeasuredFish_CMH200811.csv')
-chrissylengths<- read.xlsx('data/HB1603_6B3I_BFTlengths_20200811.xlsx', sheetIndex = 1)
+chrissylengths<- read_excel('data/HB1603_6B3I_BFTlengths_20200811.xlsx', sheet = 1)
 names(chrissylengths)[length(names(chrissylengths))]<- "Length"
 polanddata<- read.csv('data/HB1603_GU1608_IchData_7Nov2019.csv')
 
@@ -177,6 +181,6 @@ rm(babybongo_samples, query_stations, bongoZ_samples, bongoI_samples, framenet_s
 rm(polandlengths, polanddata)
 rm(all3reads, bothreads, fishID, read1, read2, read3)
 rm(read2_tokeep, read3_tokeep, cruise, filenames, fishNum, I, J, NAcolumns, shuffledorder, shuffledorder2, station)
-rm(slopeseaoperations, usalengths, polandlengths_long)
+rm(slopeseaoperations, polandlengths_long)
 
 

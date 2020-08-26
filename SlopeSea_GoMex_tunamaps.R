@@ -1,6 +1,9 @@
 
-#### Note: this file assumes that GoMexOtoProcess.R has already been run
-# and that SlopeSeaOtotlithAnalyses_2020Reads.Rmd has also been run.
+
+# run the Slope Sea processing script:
+source('SlopeSeaOtoProcess.R')
+# run the Gulf of Mexico processing script:
+source('GoMexOtoProcess.R')
 
 ## make a map of GoMex aged larvae:
 library(oce)
@@ -157,9 +160,10 @@ tunacounts_SS<- merge(tunacounts_SS, SS2016_netdata, all.x=T, all.y=F)
 SS2016_eventdata<- read.csv('data/GU1608HB1603Event.csv')
 # pull out the relevant columns:
 SS2016_eventdata<- SS2016_eventdata[,c("CRUISE_NAME", "STATION", "OPERATION", 
-                                       "TOW_MAXIMUM_DEPTH", "LATITUDE", "LONGITUDE")]
+                                       "TOW_MAXIMUM_DEPTH", "BOTTOM_DEPTH_MAX_WIRE_OUT",
+                                       "LATITUDE", "LONGITUDE")]
 names(SS2016_eventdata)<- c("Cruise", "Station", "Operation", "SamplingDepth",
-                            "Latitude", "Longitude")
+                            "BottomDepth", "Latitude", "Longitude")
 # merge with the tuna data:
 tunacounts_SS<- merge(tunacounts_SS, SS2016_eventdata, all.x=T, all.y=F)
 
