@@ -141,7 +141,7 @@ dev.off()
 
 
 ## ANCOVA to test for significantly different slopes in the growth lines: 
-# fish with fewer than 8 increments from GoMex and SS
+# fish with 0-8 increments from GoMex and SS
 # get the columns we want for SS:
 subSS<- SS_oto_data[SS_oto_data$Increments<9,c("Increments", "Length")]
 subSS$Region<- "SS"
@@ -155,3 +155,22 @@ aovmodel<- aov(Length~Increments*Region, data=foraov)
 summary(aovmodel)
 aovmodel2<- aov(Length~Increments+Region, data=foraov)
 summary(aovmodel2)
+# check for difference of fit:
+anova(aovmodel, aovmodel2)
+
+# fish with 0-4 increments from GoMex and SS
+# get the columns we want for SS:
+subSS<- SS_oto_data[SS_oto_data$Increments<=4,c("Increments", "Length")]
+subSS$Region<- "SS"
+# get the columns we want for GoMex:
+subGOM<- GOM_oto_data[GOM_oto_data$Increments<=4, c("Increments", "SL_mm_EtOH")]
+names(subGOM)<- c("Increments", "Length")
+subGOM$Region<- "GoMex"
+foraov<- rbind(subSS, subGOM)
+# run the ancova:
+aovmodel<- aov(Length~Increments*Region, data=foraov)
+summary(aovmodel)
+aovmodel2<- aov(Length~Increments+Region, data=foraov)
+summary(aovmodel2)
+# check for difference of fit:
+anova(aovmodel, aovmodel2)

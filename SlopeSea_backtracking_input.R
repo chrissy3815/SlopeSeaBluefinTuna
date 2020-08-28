@@ -57,8 +57,6 @@ write.csv(for_backtracking, file='results/SlopeSea2016_agedlarvae_forbacktrackin
 #     d. Add 2 days post hatch before first ring (Yufera et al 2014), and 2 days of egg duration 
 #        (Reglero et al 2018) to get the "days post spawning."
 
-# I'm not sure if I broke this section while adjusting code related to whether the "6B3" samples in the Poland dataset were mislabeled or not. Should check this when I'm cleaning up code for posting.
-
 ## Estimating ages for the rest of the larvae that have lengths:
 # collect all the lengths that don't have corresponding ages:
 no_age<- merge(all_lengths_SS, SS_oto_data[,c("Cruise", "Station", "Gear", "Fish", "Age")], 

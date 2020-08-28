@@ -169,6 +169,9 @@ tunacounts_SS<- merge(tunacounts_SS, SS2016_eventdata, all.x=T, all.y=F)
 
 # Calculate abundance as N per 10m2:
 tunacounts_SS$Abundance<- 10*tunacounts_SS$Nbluefin/tunacounts_SS$Vol_filtered*tunacounts_SS$SamplingDepth
+# Calculate density as N per 100 m3:
+tunacounts_SS$Density<- 100*tunacounts_SS$Nbluefin/tunacounts_SS$Vol_filtered
+
 
 # make a map for Slope Sea abundance!        
 
