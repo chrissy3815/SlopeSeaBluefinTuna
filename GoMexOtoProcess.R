@@ -71,13 +71,13 @@ plot(GOM_oto_data$SL_mm_EtOH, GOM_oto_data$Radius, pch=19)
 I<- which(names(GOM_oto_data)=='ToRing14') #bc the max age is 13
 J<- which(names(GOM_oto_data)=='ToRing2') #bc I mark the edge of the core
 # radii to outer and inner edges of each increment
-outer<- GOM_oto_data[,J:I]
-inner<- GOM_oto_data[,(J-1):(I-1)]
+outer<- GOM_oto_data[,(J+1):I]
+inner<- GOM_oto_data[,(J):(I-1)]
 # increment width
 incwidthGOM<- outer-inner
 incwidthGOM<- cbind(GOM_oto_data$Fish, incwidthGOM)
 names(incwidthGOM)<- c("Fish", "Inc1", "Inc2", "Inc3", "Inc4", "Inc5", "Inc6", "Inc7",
-                      "Inc8", "Inc9", "Inc10", "Inc11", "Inc12", "Inc13")
+                      "Inc8", "Inc9", "Inc10", "Inc11", "Inc12")
 
 # Make a second increment width dataframe with only fish that have 8 increments or fewer
 subdata<- GOM_oto_data[GOM_oto_data$Increments<9,]
@@ -85,12 +85,12 @@ subdata<- GOM_oto_data[GOM_oto_data$Increments<9,]
 I<- which(names(subdata)=='ToRing9') #bc the max age is 8
 J<- which(names(subdata)=='ToRing2') #bc I mark the edge of the core
 # radii to outer and inner edges of each increment
-outer<- subdata[,J:I]
-inner<- subdata[,(J-1):(I-1)]
+outer<- subdata[,(J+1):I]
+inner<- subdata[,(J):(I-1)]
 # increment width
 incwidthGOM_sub8inc<- outer-inner
 incwidthGOM_sub8inc<- cbind(subdata$Fish, incwidthGOM_sub8inc)
-names(incwidthGOM_sub8inc)<- c("Fish", "Inc1", "Inc2", "Inc3", "Inc4", "Inc5", "Inc6", "Inc7", "Inc8")
+names(incwidthGOM_sub8inc)<- c("Fish", "Inc1", "Inc2", "Inc3", "Inc4", "Inc5", "Inc6", "Inc7")
 
 rm(inner, outer, agecheck, all3reads, read1, read2, read3, sampleid, 
    subdata, Cruise, Fish, I, J, keepreads, shuffledorder)

@@ -167,13 +167,12 @@ dim(SS_oto_data)
 I<- which(names(SS_oto_data)=='ToRing9') #bc the max age is 8
 J<- which(names(SS_oto_data)=='ToRing2') #bc I mark the edge of the core
 # radii to outer and inner edges of each increment
-outer<- SS_oto_data[,J:I]
-inner<- SS_oto_data[,(J-1):(I-1)]
+outer<- SS_oto_data[,(J+1):I]
+inner<- SS_oto_data[,(J):(I-1)]
 # increment width
 incwidthSS<- outer-inner
 incwidthSS<- cbind(SS_oto_data$Fish, incwidthSS)
-names(incwidthSS)<- c("Fish", "Inc1", "Inc2", "Inc3", "Inc4", "Inc5", "Inc6", "Inc7",
-                      "Inc8")
+names(incwidthSS)<- c("Fish", "Inc1", "Inc2", "Inc3", "Inc4", "Inc5", "Inc6", "Inc7")
 
 # Clean up the workspace:
 rm(inner, outer)

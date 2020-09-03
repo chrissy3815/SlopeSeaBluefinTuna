@@ -3,7 +3,7 @@
 source('SlopeSeaOtoProcess.R')
 
 # we'll use only the bongo samples:
-# drop the 2B1 samples because we won't use those for abundance calculations:
+# drop the 2B1 samples:
 I<- which(all_lengths_SS$Gear=="2B1")
 all_lengths_SS<- all_lengths_SS[-I,]
 # drop the 2N3 samples as well:
@@ -37,6 +37,8 @@ SS2016_eventdata<- SS2016_eventdata[,c("CRUISE_NAME", "STATION", "OPERATION",
                                        "LATITUDE", "LONGITUDE", "EVENT_DATE")]
 names(SS2016_eventdata)<- c("Cruise", "Station", "Operation", "SamplingDepth",
                             "BottomDepth", "Latitude", "Longitude", "Date")
+# we want only the bongo events:
+SS2016_eventdata<- SS2016_eventdata[SS2016_eventdata$Operation=="BON/CTD",]
 # get day and month out:
 SSmoday<- strsplit(SS2016_eventdata$Date, "-")
 SS2016_eventdata$Day<- sapply(SSmoday, '[', 1)
@@ -57,15 +59,19 @@ n2016<- length(june) + length(july) + length(aug)
 # merge with the tuna data:
 all_lengths_SS<- merge(all_lengths_SS, SS2016_eventdata, all.x=T, all.y=F)
 
+# drop station 68 because it's in shallow water:
+I<- which(all_lengths_SS$BottomDepth<1000)
+all_lengths_SS<- all_lengths_SS[-I,]
+
 ## I'll just use the deterministic age-length relationship and round to nearest increment
 SS_agelength_inverse<- lm(Increments~Length, data=SS_oto_data)
 all_lengths_SS$DI<- SS_agelength_inverse$coefficients[1] +
                     all_lengths_SS$Length*SS_agelength_inverse$coefficients[2]
 all_lengths_SS$DI<- round(all_lengths_SS$DI)
 # I<- which(all_lengths_SS$DI<=0)
-# all_lengths_SS<- all_lengths_SS[-I,]
-all_lengths_SS$DI[all_lengths_SS$DI<0]<- 0
-#all_lengths_SS$DI[all_lengths_SS$DI<0]<- 1
+#all_lengths_SS<- all_lengths_SS[-I,]
+#all_lengths_SS$DI[all_lengths_SS$DI<0]<- 0
+all_lengths_SS$DI[all_lengths_SS$DI<0]<- 1
 
 unique_stations<- unique(all_lengths_SS[,c("Cruise","Station")])
 

@@ -22,12 +22,12 @@ GOM_agelength_sub4inc<- lm(SL_mm_EtOH~Increments, data=GOM_oto_data[GOM_oto_data
 summary(GOM_agelength_sub4inc)
 
 ## Slope Sea plots:
-png(filename='results/SlopeSea2016_SizeAtAge2.png', height=6.5, width=7.5, 
+png(filename='results/SlopeSea2016_SizeAtAge.png', height=6.5, width=7.5, 
     units= 'in', res=300)
 plot(SS_oto_data$Increments, SS_oto_data$Length, xlab='Daily Increments', 
      ylab='Standard Length (mm)', pch=1, cex=1.25, cex.lab=1.5, cex.axis=1.5,
      xlim=c(0,13), ylim=c(2, 8))
-exes<- 0:10
+exes<- 0:8
 whys<- exes*summary(SS_agelength)$coefficients[2,1]+summary(SS_agelength)$coefficients[1,1]
 # add the line for the overall SS linear fit
 lines(exes, whys, lwd=1.5)
@@ -35,12 +35,37 @@ lines(exes, whys, lwd=1.5)
 whys<- exes*summary(GOM_agelength_sub8inc)$coefficients[2,1]+summary(GOM_agelength_sub8inc)$coefficients[1,1]
 lines(exes, whys, col='grey', lwd=1.5)
 # add the line for the 0-4 inc SS fit:
+exes<- 0:4
 whys<- exes*summary(SS_agelength_sub4inc)$coefficients[2,1]+summary(SS_agelength_sub4inc)$coefficients[1,1]
 lines(exes, whys, lty=2, lwd=1.5)
 # add the line for the 0-4 inc GoMex fit:
 whys<- exes*summary(GOM_agelength_sub4inc)$coefficients[2,1]+summary(GOM_agelength_sub4inc)$coefficients[1,1]
 lines(exes, whys, lty=2, lwd=1.5, col='grey')
 legend("topleft", legend=c("SS 0-8 inc", "SS 0-4 inc", "GOM 0-8 inc", "GOM 0-4 inc"), 
+       lty=c(1,2,1,2), lwd=1.5, col=c("black", "black", "grey", "grey"))
+dev.off()
+
+# make a copy as an eps file:
+setEPS()
+postscript('results/SlopeSea2016_SizeAtAge.eps', height=6.5, width=7.5)
+plot(SS_oto_data$Increments, SS_oto_data$Length, xlab='Daily Increments', 
+     ylab='Standard Length (mm)', pch=1, cex=1.25, cex.lab=1.5, cex.axis=1.5,
+     xlim=c(0,13), ylim=c(2, 8))
+exes<- 0:8
+whys<- exes*summary(SS_agelength)$coefficients[2,1]+summary(SS_agelength)$coefficients[1,1]
+# add the line for the overall SS linear fit
+lines(exes, whys, lwd=1.5)
+# add the line for the 0-8 inc GoMex fit:
+whys<- exes*summary(GOM_agelength_sub8inc)$coefficients[2,1]+summary(GOM_agelength_sub8inc)$coefficients[1,1]
+lines(exes, whys, col='grey', lwd=1.5)
+# add the line for the 0-4 inc SS fit:
+exes<- 0:4
+whys<- exes*summary(SS_agelength_sub4inc)$coefficients[2,1]+summary(SS_agelength_sub4inc)$coefficients[1,1]
+lines(exes, whys, lty=2, lwd=1.5)
+# add the line for the 0-4 inc GoMex fit:
+whys<- exes*summary(GOM_agelength_sub4inc)$coefficients[2,1]+summary(GOM_agelength_sub4inc)$coefficients[1,1]
+lines(exes, whys, lty=2, lwd=1.5, col='grey')
+legend("bottomright", legend=c("SS 0-8 inc", "SS 0-4 inc", "GOM 0-8 inc", "GOM 0-4 inc"), 
        lty=c(1,2,1,2), lwd=1.5, col=c("black", "black", "grey", "grey"))
 dev.off()
 
@@ -60,29 +85,64 @@ dev.off()
 
 ## Gulf of Mexico otolith figures:
 # plot of size at age (to file)
-png(filename='results/GoMex2016_SizeAtAge_2.png', height=6.5, width=7.5, 
+png(filename='results/GoMex2016_SizeAtAge.png', height=6.5, width=7.5, 
     units= 'in', res=300)
 plot(GOM_oto_data$Increments, GOM_oto_data$SL_mm_EtOH, xlab='Daily Increments', 
      ylab='Standard Length (mm)', pch=1, cex=1.25, cex.lab=1.5, cex.axis=1.5,
      xlim=c(0,13), ylim=c(2, 8))
-exes<- 0:14
+exes<- 0:13
 whys<- summary(GOM_agelength)$coefficients[1,1]+summary(GOM_agelength)$coefficients[2,1]*exes
 lines(exes, whys, lwd=1.5, lty=3)
 # text(1, 6.75, "SL=2.85+0.37*DI", pos=4)
 # line for fish up to 8 increments, to match with the SS data:
+exes<- 0:8
 whys2<- summary(GOM_agelength_sub8inc)$coefficients[1,1]+summary(GOM_agelength_sub8inc)$coefficients[2,1]*exes
 lines(exes, whys2, lwd=1.5)
 # text(1, 7.5, "SL=2.47+0.46*DI", pos=4, cex=1.5)
 # add the line for the 0-4 inc GoMex fit:
+exes<- 0:4
 whys<- exes*summary(GOM_agelength_sub4inc)$coefficients[2,1]+summary(GOM_agelength_sub4inc)$coefficients[1,1]
 lines(exes, whys, lty=2, lwd=1.5)
 # add the line for the overall SS linear fit
+exes<- 0:8
 whys<- exes*summary(SS_agelength)$coefficients[2,1]+summary(SS_agelength)$coefficients[1,1]
 lines(exes, whys, lwd=1.5, col='grey')
 # add the line for the 0-4 inc SS fit:
+exes<- 0:4
 whys<- exes*summary(SS_agelength_sub4inc)$coefficients[2,1]+summary(SS_agelength_sub4inc)$coefficients[1,1]
 lines(exes, whys, lty=2, lwd=1.5, col='grey')
 legend("topleft", legend=c("GOM 0-13 inc", "GOM 0-8 inc", "GOM 0-4 inc", "SS 0-8 inc", "SS 0-4 inc"), 
+       lty=c(3,1,2,1,2), lwd=1.5, col=c("black", "black", "black", "grey", "grey"))
+dev.off()
+
+# make a copy as an EPS file:
+setEPS()
+postscript('results/GoMex2016_SizeAtAge.eps', height=6.5, width=7.5)
+plot(GOM_oto_data$Increments, GOM_oto_data$SL_mm_EtOH, xlab='Daily Increments', 
+     ylab='Standard Length (mm)', pch=1, cex=1.25, cex.lab=1.5, cex.axis=1.5,
+     xlim=c(0,13), ylim=c(2, 8))
+exes<- 0:13
+whys<- summary(GOM_agelength)$coefficients[1,1]+summary(GOM_agelength)$coefficients[2,1]*exes
+lines(exes, whys, lwd=1.5, lty=3)
+# text(1, 6.75, "SL=2.85+0.37*DI", pos=4)
+# line for fish up to 8 increments, to match with the SS data:
+exes<- 0:8
+whys2<- summary(GOM_agelength_sub8inc)$coefficients[1,1]+summary(GOM_agelength_sub8inc)$coefficients[2,1]*exes
+lines(exes, whys2, lwd=1.5)
+# text(1, 7.5, "SL=2.47+0.46*DI", pos=4, cex=1.5)
+# add the line for the 0-4 inc GoMex fit:
+exes<- 0:4
+whys<- exes*summary(GOM_agelength_sub4inc)$coefficients[2,1]+summary(GOM_agelength_sub4inc)$coefficients[1,1]
+lines(exes, whys, lty=2, lwd=1.5)
+# add the line for the overall SS linear fit
+exes<- 0:8
+whys<- exes*summary(SS_agelength)$coefficients[2,1]+summary(SS_agelength)$coefficients[1,1]
+lines(exes, whys, lwd=1.5, col='grey')
+# add the line for the 0-4 inc SS fit:
+exes<- 0:4
+whys<- exes*summary(SS_agelength_sub4inc)$coefficients[2,1]+summary(SS_agelength_sub4inc)$coefficients[1,1]
+lines(exes, whys, lty=2, lwd=1.5, col='grey')
+legend("bottomright", legend=c("GOM 0-13 inc", "GOM 0-8 inc", "GOM 0-4 inc", "SS 0-8 inc", "SS 0-4 inc"), 
        lty=c(3,1,2,1,2), lwd=1.5, col=c("black", "black", "black", "grey", "grey"))
 dev.off()
 
@@ -124,7 +184,7 @@ subincGOM<- incwidthGOM_sub8inc[,I]
 meansGOM<- apply(subincGOM[,-1], 2, FUN=mean, na.rm=TRUE)
 serrorGOM<- apply(subincGOM[,-1], 2, FUN=SE)
 maxesGOM<- meansGOM+serrorGOM
-xlimz<- c(0.5,8.5)
+xlimz<- c(0.5,7.5)
 ylimz<- c(0, max(c(maxes, maxesGOM), na.rm=TRUE))
 
 png(filename='results/SS_GOM_2016_IncWidth.png', height=6.5, width=7.5, units= 'in', res=300)
@@ -139,6 +199,19 @@ arrows(exes, meansGOM-serrorGOM, exes, meansGOM+serrorGOM, length=0.05, angle=90
 legend('topleft', legend=c('Slope Sea', 'Gulf of Mexico'), pch=c(19, 2), cex=1.5)
 dev.off()
 
+# make a copy as an eps:
+setEPS()
+postscript('results/SS_GOM_2016_IncWidth.eps', height=6.5, width=7.5)
+exes<- seq(from=0.9, by=1, length.out = length(means))
+plot(exes, means, pch=19, xlab='Increment', ylab='Mean Increment Width (um)',
+     xlim=xlimz, ylim=ylimz, cex=1.25, cex.lab=1.5, cex.axis=1.5, 
+     xaxp=c(1,8,7))
+arrows(exes, means-serror, exes, means+serror, length=0.05, angle=90, code=3)
+exes<- seq(from=1.1, by=1, length.out = length(meansGOM))
+points(exes, meansGOM, pch=2, cex=1.25)
+arrows(exes, meansGOM-serrorGOM, exes, meansGOM+serrorGOM, length=0.05, angle=90, code=3)
+legend('topleft', legend=c('Slope Sea', 'Gulf of Mexico'), pch=c(19, 2), cex=1.5)
+dev.off()
 
 ## ANCOVA to test for significantly different slopes in the growth lines: 
 # fish with 0-8 increments from GoMex and SS
@@ -174,3 +247,15 @@ aovmodel2<- aov(Length~Increments+Region, data=foraov)
 summary(aovmodel2)
 # check for difference of fit:
 anova(aovmodel, aovmodel2)
+
+## Maternal investment calculation:
+mat_inv_GOM<- GOM_oto_data$ToRing2[GOM_oto_data$Increments<=8]
+mat_inv_GOM<- mat_inv_GOM[!is.na(mat_inv_GOM)]
+mat_inv_SS<- SS_oto_data$ToRing2[!is.na(SS_oto_data$ToRing2)]
+t.test(mat_inv_SS, mat_inv_GOM, alternative="two.sided", var.equal = F)
+
+mat_inv_GOM<- GOM_oto_data$ToRing2[GOM_oto_data$Increments<=4]
+mat_inv_GOM<- mat_inv_GOM[!is.na(mat_inv_GOM)]
+mat_inv_SS<- SS_oto_data$ToRing2[SS_oto_data$Increments<=4]
+mat_inv_SS<- mat_inv_SS[!is.na(mat_inv_SS)]
+t.test(mat_inv_SS, mat_inv_GOM, alternative="two.sided", var.equal = F)
