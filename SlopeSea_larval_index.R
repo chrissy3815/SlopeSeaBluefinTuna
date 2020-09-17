@@ -108,4 +108,14 @@ Gterm
 
 Iy<- m2016/n2016*exp(T2016)*Gterm
 
+## a couple little analyses of the GoMex index:
+gom_index<- read.csv('data/Ingram2018_GoMindexTS.csv')
+gom_index_1990_2015<- gom_index[gom_index$Survey.Year>=1990 & gom_index$Survey.Year<2015,]
+min(gom_index_1990_2015$ZIDL.Index, na.rm=T)
+max(gom_index_1990_2015$ZIDL.Index, na.rm=T)
+mean(gom_index_1990_2015$ZIDL.Index, na.rm=T)
 
+gom_index_1981_2015<- gom_index[gom_index$Survey.Year>=1981 & gom_index$Survey.Year<2015,]
+min(gom_index_1981_2015$ZIDL.Index, na.rm=T)
+max(gom_index_1981_2015$ZIDL.Index, na.rm=T)
+mean(gom_index_1981_2015$ZIDL.Index, na.rm=T)

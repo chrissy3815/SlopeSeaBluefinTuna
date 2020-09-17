@@ -171,8 +171,8 @@ outer<- SS_oto_data[,(J+1):I]
 inner<- SS_oto_data[,(J):(I-1)]
 # increment width
 incwidthSS<- outer-inner
-incwidthSS<- cbind(SS_oto_data$Fish, incwidthSS)
-names(incwidthSS)<- c("Fish", "Inc1", "Inc2", "Inc3", "Inc4", "Inc5", "Inc6", "Inc7")
+incwidthSS<- cbind(SS_oto_data[,c("Cruise", "Station", "Gear","Fish")], incwidthSS)
+names(incwidthSS)<- c("Cruise", "Station", "Gear", "Fish", "Inc1", "Inc2", "Inc3", "Inc4", "Inc5", "Inc6", "Inc7")
 
 # Clean up the workspace:
 rm(inner, outer)

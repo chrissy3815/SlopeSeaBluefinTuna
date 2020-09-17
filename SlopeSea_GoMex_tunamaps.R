@@ -49,7 +49,7 @@ dev.off()
 # Make a map of Slope Sea aged larvae:
 
 # aggregate aged larvae by station:
-SS_aged_larvae<- aggregate(Fish~Cruise+Station, data=SS_oto_data, FUN=length)
+SS_aged_larvae<- aggregate(Fish~Cruise+Station+Gear, data=SS_oto_data, FUN=length)
 # add lat and lon:
 SS2016_eventdata<- read.csv('data/GU1608HB1603Event.csv')
 # pull out the relevant columns:
@@ -71,7 +71,7 @@ lon<- ncvar_get(ncid, varid='lon')
 elev<- ncvar_get(ncid, varid='elevation')
 nc_close(ncid)
 
-png(filename='results/SS2016_aged_map.png', height=5.5, width=7, units='in', res=300)
+png(filename='results/SS2016_aged_map_ExcludeLapillae.png', height=5.5, width=7, units='in', res=300)
 plot(coastlineWorldFine, longitudelim=c(-64, -76), latitudelim=c(34, 42))
 contour(lon, lat, elev, levels=c(-100, -200, -1000, -2000), add=TRUE, 
         drawlabels=FALSE, lwd=0.75, col='dark grey')
