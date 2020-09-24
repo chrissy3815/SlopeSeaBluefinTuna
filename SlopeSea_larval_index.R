@@ -23,6 +23,18 @@ names(SS2016_netdata)<- c("Cruise", "Station", "Gear", "Vol_filtered")
 SS2016_netdata$Operation<- NA
 I<- which(SS2016_netdata$Gear=="6B3I" | SS2016_netdata$Gear=="6B3" | SS2016_netdata$Gear=="6B3Z")
 SS2016_netdata$Operation[I]<- "BON/CTD"
+# exclude the volume filtered for a few samples that weren't sorted:
+not_sorted<- data.frame(Cruise=c(rep("HB1603",2),"GU1608"), 
+                        Station=c(36,125,240), 
+                        Gear = c(rep("6B3I", 2), "6B3Z"))
+to_exclude<- vector()
+for (i in 1:length(not_sorted$Cruise)){
+  J<- which(SS2016_netdata$Cruise==not_sorted$Cruise[i] &
+              SS2016_netdata$Station==not_sorted$Station[i] &
+              SS2016_netdata$Gear==not_sorted$Gear[i])
+  to_exclude<- c(to_exclude,J)
+}
+SS2016_netdata<- SS2016_netdata[-to_exclude,]
 # we're going to combine the Bongo samples:
 SS2016_netdata<- aggregate(Vol_filtered~Cruise+Station+Operation, 
                            data=SS2016_netdata, FUN=sum, na.rm=T)
@@ -43,6 +55,16 @@ SS2016_eventdata<- SS2016_eventdata[SS2016_eventdata$Operation=="BON/CTD",]
 SSmoday<- strsplit(SS2016_eventdata$Date, "-")
 SS2016_eventdata$Day<- sapply(SSmoday, '[', 1)
 SS2016_eventdata$Month<- sapply(SSmoday, '[', 2)
+# there are two stations that weren't processed in this date range, 
+# so they should be dropped from the analysis:
+not_sorted<- data.frame(Cruise=c("HB1603", "GU1608"), Station=c(21, 232))
+for (i in 1:length(not_sorted$Cruise)){
+  J<- which(SS2016_eventdata$Cruise==not_sorted$Cruise[i] &
+            SS2016_eventdata$Station==not_sorted$Station[i])
+  if (length(J)>0){
+    SS2016_eventdata<- SS2016_eventdata[-J,]
+  }
+}
 
 #count how many events fit our criteria of June 15-August 15, in water 1000 m or deeper
 june<- which(SS2016_eventdata$Month=="JUN" & 

@@ -149,7 +149,19 @@ I<- which(SS2016_netdata$Gear=="6B3I" | SS2016_netdata$Gear=="6B3" | SS2016_netd
 SS2016_netdata$Operation[I]<- "BON/CTD"
 I<- which(SS2016_netdata$Gear=="2N3")
 SS2016_netdata$Operation[I]<- "CTD/IKMT"
-# we're going to combine the Bongo samples:
+# exclude the volume filtered for a few samples that weren't sorted:
+not_sorted<- data.frame(Cruise=c(rep("HB1603",2),"GU1608"), 
+                        Station=c(36,125,240), 
+                        Gear = c(rep("6B3I", 2), "6B3Z"))
+to_exclude<- vector()
+for (i in 1:length(not_sorted$Cruise)){
+        J<- which(SS2016_netdata$Cruise==not_sorted$Cruise[i] &
+                  SS2016_netdata$Station==not_sorted$Station[i] &
+                  SS2016_netdata$Gear==not_sorted$Gear[i])
+        to_exclude<- c(to_exclude,J)
+}
+SS2016_netdata<- SS2016_netdata[-to_exclude,]
+# now we're going to combine the volume filtered for Bongo samples:
 SS2016_netdata<- aggregate(Vol_filtered~Cruise+Station+Operation, 
                             data=SS2016_netdata, FUN=sum, na.rm=T)
 # merge with the tunacounts_SS:
@@ -197,6 +209,18 @@ zerostations<- zerostations[-I,]
 temp<- tunacounts_SS[tunacounts_SS$Operation=="BON/CTD",]
 I<- which(zerostations$Station %in% temp$Station)
 zerostations<- zerostations[-I,]
+# check that all these zero stations were sorted in Poland:
+polanddata_all<- read.csv('data/HB1603_GU1608_IchData_7Nov2019.csv')
+polanddata_all_stations<- unique(polanddata_all[,c("CRUISE_NAME", "STATION")])
+exclude<- vector()
+for (i in 1:length(zerostations$Station)){
+        J<- which(polanddata_all_stations$CRUISE_NAME==zerostations$Cruise[i] &
+                  polanddata_all_stations$STATION==zerostations$Station[i])
+        if (length(J)<1){
+                exclude<- c(exclude, i)
+        }
+}
+zerostations<- zerostations[-exclude,]
 
 # Load in the coastlines
 data(coastlineWorldFine, package="ocedata")
@@ -208,7 +232,7 @@ elev<- ncvar_get(ncid, varid='elevation')
 nc_close(ncid)
 
 # plot as png:
-png(filename='results/SS2016_abund_map.png', height=5.5, width=7, units='in', res=300)
+png(filename='results/SS2016_abund_map_092330.png', height=5.5, width=7, units='in', res=300)
 plot(coastlineWorldFine, longitudelim=c(-64, -76), latitudelim=c(34, 42))
 contour(lon, lat, elev, levels=c(-100, -200, -1000, -2000), add=TRUE, 
         drawlabels=FALSE, lwd=0.75, col='dark grey')
@@ -236,7 +260,7 @@ dev.off()
 
 # plot as eps:
 setEPS()
-postscript('results/SS2016_abund_map.eps', height=5.5, width=7)
+postscript('results/SS2016_abund_map_092330.eps', height=5.5, width=7)
 plot(coastlineWorldFine, longitudelim=c(-64, -76), latitudelim=c(34, 42))
 contour(lon, lat, elev, levels=c(-100, -200, -1000, -2000), add=TRUE, 
         drawlabels=FALSE, lwd=0.75, col='dark grey')
@@ -266,6 +290,7 @@ dev.off()
 ## SEAMAP abundance in 2016:
 
 seamap_bongos<- read.csv('data/SEAMAP_SPRING2016_TUNA_LARVAE_bongos.csv')
+seamap_shallow_bongos<- read.csv('data/SEAMAP_SPRING2016_TUNA_LARVAE_shallow_bongos.csv')
 seamap_zeros<- seamap_bongos[seamap_bongos$TAXON=="NO TUNA LARVAE CAUGH",]
 seamap_bluefin<- seamap_bongos[seamap_bongos$TAXON=="Thunnus thynnus",]
 seamap_bongos<- rbind(seamap_zeros, seamap_bluefin)
