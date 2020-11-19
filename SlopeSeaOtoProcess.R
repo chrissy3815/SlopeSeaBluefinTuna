@@ -88,10 +88,10 @@ head(SS_oto_data)
 slopeseaoperations<- read_excel('data/SlopeSeaOperations.xlsx', sheet = 2)
 metadata<- slopeseaoperations[,c("cruiseid", "siteid", "event time", 
                                  "deployment", "lat", "lon", "max ctd depth", 
-                                 "gm_1", "tot_1", "gm_2", "tot_2")]
+                                 "gm_1", "tot_1", "gm_2", "tot_2", "sfc t")]
 names(metadata)<- c("Cruise", "Station", "DateTime", "GearType", "lat", "lon", 
                     "MaxDepth", "Bongo1", "VolumeFiltered_B1", "Bongo2", 
-                    "VolumeFiltered_B2")
+                    "VolumeFiltered_B2", "SST")
 metadata$LatDec<- floor(metadata$lat/100)+(metadata$lat-floor(metadata$lat/100)*100)/60
 metadata$LonDec<- floor(metadata$lon/100)+(metadata$lon-floor(metadata$lon/100)*100)/60
 head(metadata)
@@ -114,25 +114,25 @@ usalengths$Gear[usalengths$Gear=='2n3']<- "2N3"
 I<- which(usalengths$Gear=="2N3")
 query_stations<- unique(usalengths[I,c("Cruise", "Station")])
 J<- which(metadata$GearType=="CTD/IKMT Oblique")
-framenet_samples<- merge(query_stations, metadata[J, c("Cruise", "Station", "LatDec", "LonDec", "DateTime")])
+framenet_samples<- merge(query_stations, metadata[J, c("Cruise", "Station", "LatDec", "LonDec", "DateTime", "SST")])
 framenet_samples$Gear<- "2N3"
 # Next, for the baby Bongo samples:
 I<- which(usalengths$Gear=="2B1")
 query_stations<- unique(usalengths[I,c("Cruise", "Station")])
 J<- which(metadata$GearType=="CTD/Bongo Oblique")
-babybongo_samples<- merge(query_stations, metadata[J, c("Cruise", "Station", "LatDec", "LonDec", "DateTime")])
+babybongo_samples<- merge(query_stations, metadata[J, c("Cruise", "Station", "LatDec", "LonDec", "DateTime", "SST")])
 babybongo_samples$Gear<- "2B1"
 # Next, for the 6B3I samples:
 I<- which(usalengths$Gear=="6B3I")
 query_stations<- unique(usalengths[I,c("Cruise", "Station")])
 J<- which(metadata$GearType=="CTD/Bongo Oblique")
-bongoI_samples<- merge(query_stations, metadata[J, c("Cruise", "Station", "LatDec", "LonDec", "DateTime")])
+bongoI_samples<- merge(query_stations, metadata[J, c("Cruise", "Station", "LatDec", "LonDec", "DateTime", "SST")])
 bongoI_samples$Gear<- "6B3I"
 # Next, for the 6B3Z samples:
 I<- which(usalengths$Gear=="6B3Z")
 query_stations<- unique(usalengths[I,c("Cruise", "Station")])
 J<- which(metadata$GearType=="CTD/Bongo Oblique")
-bongoZ_samples<- merge(query_stations, metadata[J, c("Cruise", "Station", "LatDec", "LonDec", "DateTime")])
+bongoZ_samples<- merge(query_stations, metadata[J, c("Cruise", "Station", "LatDec", "LonDec", "DateTime", "SST")])
 bongoZ_samples$Gear<- "6B3Z"
 # paste all these rows together
 to_merge<- rbind(framenet_samples, babybongo_samples, bongoI_samples, bongoZ_samples)
@@ -151,7 +151,7 @@ polandlengths_long$Fish<- NA
 # Bring in the lat, lon, and datetime fields from the metadata
 query_stations<- unique(polandlengths_long[,c("Cruise", "Station")])
 J<- which(metadata$GearType=="CTD/Bongo Oblique")
-bongoI_samples<- merge(query_stations, metadata[J, c("Cruise", "Station", "LatDec", "LonDec", "DateTime")])
+bongoI_samples<- merge(query_stations, metadata[J, c("Cruise", "Station", "LatDec", "LonDec", "DateTime", "SST")])
 # merge back together:
 polandlengths_long<- merge(polandlengths_long,bongoI_samples)
 # reorder the columns to match usalengths so that i can rbind:

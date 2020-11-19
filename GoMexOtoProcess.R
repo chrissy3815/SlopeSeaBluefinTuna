@@ -47,7 +47,7 @@ GOM_oto_data$Increments[GOM_oto_data$Increments<0]<- 0
 
 # read in size data
 seamapdata<- read_excel('data/BFT2016_SEAMAP_Metadata_forCHernandez_27Mar2018.xlsx', 1)
-seamapdata<- seamapdata[,c('ELH_ID', 'SL_mm_EtOH', 'Slat', 'Slon')]
+seamapdata<- seamapdata[,c('ELH_ID', 'SL_mm_EtOH', 'Slat', 'Slon', "Sample_No")]
 head(seamapdata)
 
 # make matching columns in GOM_oto_data and seamapdata that contain the 4-digit fish ID:

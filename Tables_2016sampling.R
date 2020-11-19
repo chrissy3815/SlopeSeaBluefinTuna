@@ -1,4 +1,5 @@
 ## This is for making tables for my chapter/manuscript on bluefin tuna:
+library(readxl)
 
 # Larvae that were ID'ed in the US:
 davelengths<- read.csv('data/2016MeasuredFish_CMH200811.csv')
