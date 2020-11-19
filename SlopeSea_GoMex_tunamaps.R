@@ -24,7 +24,8 @@ OR317<- GOM_oto_data[,c("Fish", "Slat", "Slon")]
 head(OR317)
 toplot<- aggregate(Fish~Slat+Slon, data=OR317, FUN = length)
 
-png(filename='results/GOM2016_map.png', height=5.5, width=7, units='in', res=300)
+setEPS()
+postscript('results/GOM2016_aged_map.eps', height=5.5, width=7)
 plot(coastlineWorldFine, longitudelim=c(-78, -99), latitudelim=c(25, 30), 
      xlab='Longitude', ylab='Latitude')
 contour(lon, lat, elev, levels=c(-100, -200, -1000, -2000), add=TRUE, 
@@ -71,7 +72,8 @@ lon<- ncvar_get(ncid, varid='lon')
 elev<- ncvar_get(ncid, varid='elevation')
 nc_close(ncid)
 
-png(filename='results/SS2016_aged_map_ExcludeLapillae.png', height=5.5, width=7, units='in', res=300)
+setEPS()
+postscript('results/SS2016_aged_map_ExcludeLapillae.eps', height=5.5, width=7)
 plot(coastlineWorldFine, longitudelim=c(-64, -76), latitudelim=c(34, 42))
 contour(lon, lat, elev, levels=c(-100, -200, -1000, -2000), add=TRUE, 
         drawlabels=FALSE, lwd=0.75, col='dark grey')
@@ -231,33 +233,6 @@ lon<- ncvar_get(ncid, varid='lon')
 elev<- ncvar_get(ncid, varid='elevation')
 nc_close(ncid)
 
-# plot as png:
-png(filename='results/SS2016_abund_map_092330.png', height=5.5, width=7, units='in', res=300)
-plot(coastlineWorldFine, longitudelim=c(-64, -76), latitudelim=c(34, 42))
-contour(lon, lat, elev, levels=c(-100, -200, -1000, -2000), add=TRUE, 
-        drawlabels=FALSE, lwd=0.75, col='dark grey')
-points(tunacounts_SS$Longitude, tunacounts_SS$Latitude,
-       cex=tunacounts_SS$Abundance/5, lwd=2)
-points(zerostations$Longitude, zerostations$Latitude, pch=3, lwd=1.5)
-# add a legend
-legend(-65, 37, legend=c('0', '2', '5', '10', '20'), 
-       col=c('black', 'black', 'blue', 'blue', 'blue'), pch=rep(1,5), 
-       pt.cex=rep(NA, 4), bty='n', 
-       title='N per 10 m2')
-legend(-65.3, 36.45, legend=rep(NA, 5), pch=c(3, 1, 1, 1, 1), 
-       pt.cex=c(1, 2/5, 1, 2, 4), pt.lwd=c(1.5,2,2,2,2), bty='n')
-
-# Add an inset map:
-par(new=TRUE)
-par(mar=c(1,1,1,1))
-plotInset("bottomleft", 
-          expr={plot(coastlineWorldFine, longitudelim=c(-60, -80), latitudelim=c(20, 50), 
-                     inset=TRUE, bg='white', axes=F, lwd=0.5)
-                  polygon(x=c(-63, -63, -77, -77), y=c(34, 42, 42, 34), 
-                          density=NULL, border='blue')
-          })
-dev.off()
-
 # plot as eps:
 setEPS()
 postscript('results/SS2016_abund_map_092330.eps', height=5.5, width=7)
@@ -314,7 +289,8 @@ lon<- ncvar_get(ncid, varid='lon')
 elev<- ncvar_get(ncid, varid='elevation')
 nc_close(ncid)
 
-png(filename='results/GOM2016_abund_map.png', height=5.5, width=6.3, units='in', res=300)
+setEPS()
+postscript('results/GOM2016_abund_map.eps', height=5.5, width=6.3)
 plot(coastlineWorldFine, longitudelim=c(-78.5, -99), latitudelim=c(25, 30), 
      xlab='Longitude', ylab='Latitude')
 contour(lon, lat, elev, levels=c(-100, -200, -1000, -2000), add=TRUE, 
