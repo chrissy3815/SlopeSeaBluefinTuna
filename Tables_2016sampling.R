@@ -98,3 +98,9 @@ table_SS<- tunacounts_SS[,c("Date", "Cruise", "Station", "Operation",
                             "Nbluefin", "Abundance")]
 write.csv(table_SS, file='results/SlopeSeaSampling_Table.csv')
 
+## Make a quick plot of abundance vs. SST:
+setEPS()
+postscript('results/SS2016_SST_vs_Abundance.eps', height=5, width=6)
+plot(table_SS$SST, table_SS$Abundance, pch=19,
+     xlab="Sea Surface Temperature", ylab="Abundance")
+dev.off()
