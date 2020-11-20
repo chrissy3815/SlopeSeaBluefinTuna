@@ -33,7 +33,7 @@ lon<- ncvar_get(ncid, varid='lon')
 elev<- ncvar_get(ncid, varid='elevation')
 nc_close(ncid)
 # load in the Slope Sea boundary:
-#SS_polygon<- read.mat('data/LonLatSlopeSea.mat') # Irina's SlopeSea boundary
+SS_polygon<- read.mat('data/LonLatSlopeSea.mat') # Irina's SlopeSea boundary
 SS_shp<- readOGR('data/gazetteer_polygon/gazetteer_polygon.shp') #Dave's SlopeSea boundary
 
 # make a plot of the backtracked locations:
@@ -89,7 +89,8 @@ dev.off()
 
 # the ones that left the domain:
 leftdomain<- c(25, 44, 45, 46, 47, 48, 49)
-png(filename='results/SS2016_traj_domainEdge.png', height=5.5, width=7, units='in', res=300)
+setEPS()
+postscript('results/SS2016_traj_domainEdge.eps', height=5.5, width=7)
 plot(coastlineWorldFine, longitudelim=c(-60, -77), latitudelim=c(33, 43),
      xlab='Longitude', ylab='Latitude')
 contour(lon, lat, elev, levels=c(-100, -200, -1000, -2000), add=TRUE, 
