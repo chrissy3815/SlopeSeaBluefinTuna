@@ -95,7 +95,7 @@ plot(coastlineWorldFine, longitudelim=c(-60, -77), latitudelim=c(33, 43),
      xlab='Longitude', ylab='Latitude')
 contour(lon, lat, elev, levels=c(-100, -200, -1000, -2000), add=TRUE, 
         drawlabels=FALSE, lwd=0.75, col=cbPalette[1])
-polygon(SS_polygon$lonss, SS_polygon$latss, border= cbPalette[5], lwd=1.5)
+polygon(SS_polygon$lonss, SS_polygon$latss, border= cbPalette[4], lwd=1.5)
 
 for (i in leftdomain){
   thisfile<- paste('data/MABGOM2_2016_tr/MABGOM2_2016_tr',i,'.mat', sep='')
