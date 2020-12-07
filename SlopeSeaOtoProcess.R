@@ -148,6 +148,22 @@ I<- which(names(polandlengths_long)=="COUNT_AT_LENGTH")
 polandlengths_long<- polandlengths_long[,-I]
 names(polandlengths_long)<- c("Cruise", "Station", "Gear", "Length")
 polandlengths_long$Fish<- NA
+# Find the 3 fish with missing length data:
+polanddata_agg<- polanddata[polanddata$TAXA_NAME=="Thunnus thynnus",]
+polanddata_agg<- polanddata_agg[,c("CRUISE_NAME", "STATION", "GEAR", "TOTAL_COUNT",
+                                 "COUNT_AT_LENGTH", "LENGTH")]
+polanddata_agg<- aggregate(COUNT_AT_LENGTH~CRUISE_NAME+STATION+TOTAL_COUNT, 
+                           data=polanddata_agg, FUN = sum)
+polanddata_agg$REP<- polanddata_agg$TOTAL_COUNT-polanddata_agg$COUNT_AT_LENGTH
+I<- which(polanddata_agg$REP>0)
+for (i in I){
+  J<- which(polandlengths_long$Cruise==polanddata_agg$CRUISE_NAME[i] & 
+              polandlengths_long$Station==polanddata_agg$STATION[i])[1]
+  newrow<- as.data.frame(lapply(polandlengths_long[J,], rep, polanddata_agg$REP[i]))
+  newrow$Length<- NA
+  polandlengths_long<- rbind(polandlengths_long, newrow)
+}
+
 # Bring in the lat, lon, and datetime fields from the metadata
 query_stations<- unique(polandlengths_long[,c("Cruise", "Station")])
 J<- which(metadata$GearType=="CTD/Bongo Oblique")

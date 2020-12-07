@@ -101,32 +101,25 @@ dev.off()
 # the larvae that Dave and I ID'ed (compiled in the usalengths)
 # and the larvae that were ID'ed in Poland (but in this case I only care about counts)
 
-# read in the poland data again:
-polanddata<- read.csv('data/HB1603_GU1608_IchData_7Nov2019.csv')
-# but we only want the bluefin tuna:
-polanddata<- polanddata[polanddata$TAXA_NAME=="Thunnus thynnus",]
-# keep only the relevant columns:
-polanddata<- polanddata[,c("CRUISE_NAME", "STATION", "GEAR", 
-                           "LATITUDE", "LONGITUDE", "TOTAL_COUNT")]
-head(polanddata)
-names(polanddata)<- c("Cruise", "Station", "Gear" , "LatDec", "LonDec", "Nbluefin")
-# switch longitudes to degW to match the other dataset:
-polanddata$LonDec<- abs(polanddata$LonDec)
-# eliminate repeated rows:
-polanddata<- unique(polanddata)
+# December 7 2020: I updated the SlopeSeaOtoProcess script to include ALL larvae 
+# in the all_lengths_SS object, including 3 larvae that we do not have length 
+# data for AND the newly identified bluefin that were mislabeled as Scomber scombrus. 
+# Rather than read in all the data a second time in this script, I updated this 
+# section to use all_lengths_SS.
 
-# aggregate the usalengths data to get N per net:
-usadata<- aggregate(Fish~Cruise+Station+Gear, data=usalengths, FUN=length)
-# rename the "Fish" column:
-names(usadata)[length(names(usadata))]<- "Nbluefin"
+# Count how many rows we have for each net in the all_lengths_SS data to get Nbluefin per net:
+# *** note that I'm using SST here so that aggregate counts the rows with NA for the 
+# fish number and the rows with NA for the length...SST is just a column that's 
+# guaranteed to have an entry so that I can get row counts.
+tunacounts_SS<- aggregate(SST~Cruise+Station+Gear, data=all_lengths_SS, FUN=length)
+# rename the "SST" column:
+names(tunacounts_SS)[length(names(tunacounts_SS))]<- "Nbluefin"
 # do a merge to get the lat and lon back:
-usadata<- merge(usadata, 
-                unique(usalengths[,c("Cruise", "Station", "Gear", "LatDec", "LonDec")]))
+tunacounts_SS<- merge(tunacounts_SS, 
+                unique(all_lengths_SS[,c("Cruise", "Station", "Gear", "LatDec", "LonDec")]))
 # reorder the columns to match polanddata:
-usadata<- usadata[,c("Cruise", "Station", "Gear" , "LatDec", "LonDec", "Nbluefin")]
+tunacounts_SS<- tunacounts_SS[,c("Cruise", "Station", "Gear" , "LatDec", "LonDec", "Nbluefin")]
 
-# merge the usadata and polanddata:
-tunacounts_SS<- merge(polanddata, usadata, all=TRUE)
 # drop the 2B1 samples because we won't use those for abundance calculations:
 I<- which(tunacounts_SS$Gear=="2B1")
 tunacounts_SS<- tunacounts_SS[-I,]
@@ -235,7 +228,7 @@ nc_close(ncid)
 
 # plot as eps:
 setEPS()
-postscript('results/SS2016_abund_map_092330.eps', height=5.5, width=7)
+postscript('results/SS2016_abund_map_120720.eps', height=5.5, width=7)
 plot(coastlineWorldFine, longitudelim=c(-64, -76), latitudelim=c(34, 42))
 contour(lon, lat, elev, levels=c(-100, -200, -1000, -2000), add=TRUE, 
         drawlabels=FALSE, lwd=0.75, col='dark grey')
