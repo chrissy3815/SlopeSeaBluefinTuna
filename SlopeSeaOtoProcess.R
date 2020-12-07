@@ -157,7 +157,26 @@ polandlengths_long<- merge(polandlengths_long,bongoI_samples)
 # reorder the columns to match usalengths so that i can rbind:
 polandlengths_long<- polandlengths_long[,names(usalengths)]
 
-all_lengths_SS<- rbind(usalengths, polandlengths_long)
+# need to read in and add the scomber scombrus corrections from Dave:
+scomber<- read_excel('data/FishData_HB1603_ScomberCheck.xlsx', sheet=2)
+scomber<- scomber[scomber$`Richardson ID`=="bluefin",]
+scomber<- scomber[,c("CRUISE_NAME", "STATION", "GEAR", "COUNT_AT_LENGTH", "LENGTH")]
+scomber_long <- as.data.frame(lapply(scomber, rep, scomber$COUNT_AT_LENGTH))
+I<- which(names(scomber_long)=="COUNT_AT_LENGTH")
+scomber_long<- scomber_long[,-I]
+names(scomber_long)<- c("Cruise", "Station", "Gear", "Length")
+scomber_long$Fish<- NA
+# Bring in the lat, lon, and datetime fields from the metadata
+query_stations<- unique(scomber_long[,c("Cruise", "Station")])
+J<- which(metadata$GearType=="CTD/Bongo Oblique")
+bongoI_samples<- merge(query_stations, metadata[J, c("Cruise", "Station", "LatDec", "LonDec", "DateTime", "SST")])
+# merge back together:
+scomber_long<- merge(scomber_long,bongoI_samples)
+# reorder the columns to match usalengths so that i can rbind:
+scomber_long<- scomber_long[,names(usalengths)]
+
+all_lengths_SS<- rbind(usalengths, polandlengths_long, scomber_long)
+
 
 # Join the otolith data and length data:
 SS_oto_data<- merge(SS_oto_data, all_lengths_SS)
