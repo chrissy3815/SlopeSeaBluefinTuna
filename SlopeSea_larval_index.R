@@ -13,6 +13,9 @@ all_lengths_SS<- all_lengths_SS[-I,]
 all_lengths_SS$Operation<- NA
 I<- which(all_lengths_SS$Gear=="6B3I" | all_lengths_SS$Gear=="6B3" | all_lengths_SS$Gear=="6B3Z")
 all_lengths_SS$Operation[I]<- "BON/CTD"
+# drop those 3 NA lengths:
+I<- which(is.na(all_lengths_SS$Length))
+all_lengths_SS<- all_lengths_SS[-I,]
 
 # need to add the volume filtered:
 SS2016_netdata<- read.csv('data/GU1608HB1603Net.csv')

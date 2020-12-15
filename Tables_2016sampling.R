@@ -1,31 +1,19 @@
 ## This is for making tables for my chapter/manuscript on bluefin tuna:
 library(readxl)
 
-# Larvae that were ID'ed in the US:
-davelengths<- read.csv('data/2016MeasuredFish_CMH200811.csv')
-davecounts<- aggregate(Fish~Cruise+Gear+Station, data=davelengths, FUN=length)
-davecounts$Gear[davecounts$Gear=='2n3']<- '2N3'
+source('SlopeSeaOtoProcess.R')
 
-chrissylengths<- read_excel('data/HB1603_6B3I_BFTlengths_20200811.xlsx', sheet = 1)
-chrissycounts<- aggregate(Fish~Cruise+Station+Gear, data=chrissylengths, FUN=length)
+# Count how many rows we have for each net in the all_lengths_SS data to get Nbluefin per net:
+# *** note that I'm using SST here so that aggregate counts the rows with NA for the 
+# fish number and the rows with NA for the length...SST is just a column that's 
+# guaranteed to have an entry so that I can get row counts.
+tunacounts_SS<- aggregate(SST~Cruise+Station+Gear, data=all_lengths_SS, FUN=length)
+# rename the "SST" column:
+names(tunacounts_SS)[length(names(tunacounts_SS))]<- "Nbluefin"
+# do a merge to get the lat and lon back:
+tunacounts_SS<- merge(tunacounts_SS, 
+                      unique(all_lengths_SS[,c("Cruise", "Station", "Gear", "LatDec", "LonDec")]))
 
-usacounts<- rbind(davecounts, chrissycounts)
-usacounts<- aggregate(Fish~Cruise+Gear+Station, data=usacounts, FUN=sum)
-# rename the "Fish" column:
-names(usacounts)[names(usacounts)=="Fish"]<- "Nbluefin"
-
-# read in the poland data:
-polandcounts<- read.csv('data/HB1603_GU1608_IchData_7Nov2019.csv')
-# but we only want the bluefin tuna:
-polandcounts<- polandcounts[polandcounts$TAXA_NAME=="Thunnus thynnus",]
-# keep only the relevant columns:
-polandcounts<- polandcounts[,c("CRUISE_NAME", "GEAR", "STATION", "TOTAL_COUNT")]
-head(polandcounts)
-names(polandcounts)<- c("Cruise", "Gear", "Station", "Nbluefin")
-polandcounts<- unique(polandcounts)
-
-# merge the usacounts and polandcounts:
-tunacounts_SS<- merge(polandcounts, usacounts, all=TRUE)
 # add the "Operation" column:
 tunacounts_SS$Operation<- NA
 I<- which(tunacounts_SS$Gear %in% c("6B3I", "6B3", "6B3Z"))

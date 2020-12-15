@@ -45,10 +45,20 @@ for_backtracking<- merge(for_backtracking, to_merge)
 for_backtracking$DaysPostSpawn<- for_backtracking$Increments+4
 
 # There's no use in running repeats, so take unique rows of the important columns:
-for_backtracking<- unique(for_backtracking[,c("Cruise", "Station", "DateTime", "LatDec", "LonDec", "DaysPostSpawn")])
+for_backtracking_unique<- unique(for_backtracking[,c("Cruise", "Station", "DateTime", "LatDec", "LonDec", "DaysPostSpawn")])
+# but I want to keep track of how many larvae each row corresponds to:
+for (i in 1:length(for_backtracking_unique$Cruise)){
+  x<- length(which(for_backtracking$Cruise==for_backtracking_unique$Cruise[i] &
+                   for_backtracking$Station==for_backtracking_unique$Station[i] &
+                   for_backtracking$DateTime==for_backtracking_unique$DateTime[i] &
+                   for_backtracking$DaysPostSpawn==for_backtracking_unique$DaysPostSpawn[i]))
+  for_backtracking_unique$Nlarvae[i]<- x
+}
 
 # write the csv out:
-write.csv(for_backtracking, file='results/SlopeSea2016_agedlarvae_forbacktracking_TEMP.csv')
+write.csv(for_backtracking_unique, 
+          file='results/SlopeSea2016_agedlarvae_forbacktracking_121520.csv', 
+          row.names=F)
 
 ### 2. For larvae that we only have length, need to follow the same steps as from the PIPA project.
 #     a. Construct age-length relationship from my Slope Sea reads
@@ -57,6 +67,9 @@ write.csv(for_backtracking, file='results/SlopeSea2016_agedlarvae_forbacktrackin
 #     d. Add 2 days post hatch before first ring (Yufera et al 2014), and 2 days of egg duration 
 #        (Reglero et al 2018) to get the "days post spawning."
 
+# There are also 3 larvae without length data. For these 3, we will use the 
+# average length of the other larvae collected at that station. 
+
 ## Estimating ages for the rest of the larvae that have lengths:
 # collect all the lengths that don't have corresponding ages:
 no_age<- merge(all_lengths_SS, SS_oto_data[,c("Cruise", "Station", "Gear", "Fish", "Age")], 
@@ -64,6 +77,15 @@ no_age<- merge(all_lengths_SS, SS_oto_data[,c("Cruise", "Station", "Gear", "Fish
 I<- which(!is.na(no_age$Age))
 no_age<- no_age[-I,c("Cruise","Station", "Gear", "Fish", "Length")]
 head(no_age)
+
+# Assign the average length of larvae from the station to the larvae without lengths.
+avg_length_station<- aggregate(Length~Cruise+Station, data=all_lengths_SS, 
+                               FUN=mean, na.rm=T)
+I<- which(is.na(no_age$Length))
+for (i in I){
+  J<- which(avg_length_station$Station==no_age$Station[i])
+  no_age$Length[i]<- avg_length_station$Length[J]
+}
 
 # Build the relationship with the residuals of the inverted age-length relationship:
 model2<- lm(Increments~Length, data=SS_oto_data)
@@ -128,15 +150,50 @@ bongoZ_samples$Gear<- "6B3Z"
 I<- which(no_age$Gear=="6B3")
 query_stations<- unique(no_age[I,c("Cruise", "Station")])
 J<- which(metadata$GearType=="CTD/Bongo Oblique")
-bongoZ_samples<- merge(query_stations, metadata[J, c("Cruise", "Station", "LatDec", "LonDec", "DateTime")])
-bongoZ_samples$Gear<- "6B3"
+bongoY_samples<- merge(query_stations, metadata[J, c("Cruise", "Station", "LatDec", "LonDec", "DateTime")])
+bongoY_samples$Gear<- "6B3"
 # paste all these rows together
-to_merge<- rbind(framenet_samples, babybongo_samples, bongoI_samples, bongoZ_samples)
+to_merge<- rbind(framenet_samples, babybongo_samples, bongoI_samples, 
+                 bongoZ_samples, bongoY_samples)
 
 no_age<- merge(no_age, to_merge)
 
 # There's no use in running repeats, so take unique rows of the important columns:
-no_age<- unique(no_age[,c("Cruise", "Station", "DateTime", "LatDec", "LonDec", "EstDaysPostSpawn")])
+no_age_unique<- unique(no_age[,c("Cruise", "Station", "DateTime", "LatDec", "LonDec", "EstDaysPostSpawn")])
+# but I want to keep track of how many larvae each row corresponds to:
+for (i in 1:length(no_age_unique$Cruise)){
+  x<- length(which(no_age$Cruise==no_age_unique$Cruise[i] &
+                   no_age$Station==no_age_unique$Station[i] &
+                   no_age$DateTime==no_age_unique$DateTime[i] &
+                   no_age$EstDaysPostSpawn==no_age_unique$EstDaysPostSpawn[i]))
+  no_age_unique$Nlarvae[i]<- x
+}
 
 # write the csv out:
-write.csv(no_age, file='results/SlopeSea2016_estimatedlarvae_forbacktracking_TEMP.csv')
+write.csv(no_age_unique, 
+          file='results/SlopeSea2016_estimatedlarvae_forbacktracking_121520.csv',
+          row.names=F)
+
+### As of December 7, 2020, I think it would make the most sense to combine these
+# two dataframes and only send a single one to Irina. 
+
+# rename the column in for_backtracking_unique to "EstDaysPostSpawn"
+J<- which(names(for_backtracking_unique)=="DaysPostSpawn")
+names(for_backtracking_unique)[J]<- "EstDaysPostSpawn"
+# rbind the two dataframes together:
+all_backtracking<- rbind(no_age_unique, for_backtracking_unique)
+# take the unique again:
+all_backtracking_unique<- unique(all_backtracking[,c("Cruise", "Station", "DateTime", "LatDec", "LonDec", "EstDaysPostSpawn")])
+# but I want to keep track of how many larvae each row corresponds to:
+for (i in 1:length(all_backtracking_unique$Cruise)){
+  x<- which(all_backtracking$Cruise==all_backtracking_unique$Cruise[i] &
+            all_backtracking$Station==all_backtracking_unique$Station[i] &
+            all_backtracking$DateTime==all_backtracking_unique$DateTime[i] &
+            all_backtracking$EstDaysPostSpawn==all_backtracking_unique$EstDaysPostSpawn[i])
+  all_backtracking_unique$Nlarvae[i]<- sum(all_backtracking$Nlarvae[x])
+}
+
+# write the csv!
+write.csv(all_backtracking_unique, 
+          file='results/SlopeSea2016_allLarvae_forbacktracking_121520.csv',
+          row.names=F)
