@@ -3,11 +3,12 @@
 library(oce)
 library(ocedata)
 library(ncdf4)
+library(here)
 
 # run the Slope Sea processing script:
-source('SlopeSeaOtoProcess.R')
+source(here('code', 'SlopeSeaOtoProcess.R'))
 # run the Gulf of Mexico processing script:
-source('GoMexOtoProcess.R')
+source(here('code','GoMexOtoProcess.R'))
 
 ## make a map of GoMex aged larvae:
 # Load in the coastlines
