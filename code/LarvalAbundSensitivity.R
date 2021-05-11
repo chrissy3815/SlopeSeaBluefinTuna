@@ -52,6 +52,7 @@ I<- which(all_bongo_stns$Month=="AUG" & all_bongo_stns$Day>15)
 subdata<- all_bongo_stns[-I,] # drop the late august stations
 I<- which(subdata$BottomDepth<1000)
 subdata<- subdata[-I,] # drop the shallow stations
+write.csv(subdata,file=here("results","Mean1Chrissy_210511.csv"))
 meanAbund<- mean(subdata$Abundance)
 meanAbund
 meanPosStn<- mean(subdata$Abundance[subdata$Abundance>0])
