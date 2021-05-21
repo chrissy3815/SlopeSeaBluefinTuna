@@ -2,18 +2,19 @@
 
 # required packages:
 library(readxl)
+library(here)
 
 ## First, we need to shuffle the read order for read 2:
-read1<- read_excel('data/SlopeSeaOto2016_FullRead_1.xlsx')
+read1<- read_excel(here('data', 'SlopeSeaOto2016_FullRead_1.xlsx'))
 filenames<- read1$Fish
 shuffledorder<- sample(filenames)
 write.csv(shuffledorder, file='results/SlopeSeaOto_2020Reads_read2order.csv')
 
 ## Next, some QC checks on reads 1 and 2:
 # bring in the data from otoliths read 1:
-read1<- read_excel('data/SlopeSeaOto2016_FullRead_1.xlsx', sheet = 1)
+read1<- read_excel(here('data','SlopeSeaOto2016_FullRead_1.xlsx'), sheet = 1)
 # bring in the data from otoliths read 2:
-read2<- read_excel('data/SlopeSeaOto2016_FullRead_2_retakes.xlsx', sheet = 1)
+read2<- read_excel(here('data','SlopeSeaOto2016_FullRead_2_retakes.xlsx'), sheet = 1)
 names(read2)[length(names(read2))]<- "Age2"
 
 # use merge to combine both reads:
@@ -30,7 +31,7 @@ write.csv(shuffledorder2, file='results/SlopeSeaOto_2020Reads_read3order.csv')
 
 ##Check read 3:
 # bring in the read3 data:
-read3<- read_excel('data/SlopeSeaOto2016_FullRead_3.xlsx', sheet = 1)
+read3<- read_excel(here('data','SlopeSeaOto2016_FullRead_3.xlsx'), sheet = 1)
 names(read3)[length(names(read3))]<- "Age3"
 all3reads<- merge(bothreads, read3[,c("Fish", "Age3")])
 all3reads$diff1<- abs(all3reads$Age-all3reads$Age3)
@@ -85,7 +86,7 @@ SS_oto_data$Fish<- as.numeric(fishNum)
 head(SS_oto_data)
 
 ## Other metadata from the tows:
-slopeseaoperations<- read_excel('data/SlopeSeaOperations.xlsx', sheet = 2)
+slopeseaoperations<- read_excel(here('data','SlopeSeaOperations.xlsx'), sheet = 2)
 metadata<- slopeseaoperations[,c("cruiseid", "siteid", "event time", 
                                  "deployment", "lat", "lon", "max ctd depth", 
                                  "gm_1", "tot_1", "gm_2", "tot_2", "sfc t")]
@@ -97,10 +98,10 @@ metadata$LonDec<- floor(metadata$lon/100)+(metadata$lon-floor(metadata$lon/100)*
 head(metadata)
 
 ## Wrangling the length data:
-davelengths<- read.csv('data/2016MeasuredFish_CMH200811.csv')
-chrissylengths<- read_excel('data/HB1603_6B3I_BFTlengths_20200811.xlsx', sheet = 1)
+davelengths<- read.csv(here('data','2016MeasuredFish_CMH200811.csv'))
+chrissylengths<- read_excel(here('data','HB1603_6B3I_BFTlengths_20200811.xlsx'), sheet = 1)
 names(chrissylengths)[length(names(chrissylengths))]<- "Length"
-polanddata<- read.csv('data/HB1603_GU1608_IchData_7Nov2019.csv')
+polanddata<- read.csv(here('data','HB1603_GU1608_IchData_7Nov2019.csv'))
 
 # pull out the correct columns to be able to rbind davelengths and chrissylengths
 davelengths<- davelengths[,c('Cruise', 'Station', 'Gear', 'Fish', 'Length')]
@@ -174,7 +175,7 @@ polandlengths_long<- merge(polandlengths_long,bongoI_samples)
 polandlengths_long<- polandlengths_long[,names(usalengths)]
 
 # need to read in and add the scomber scombrus corrections from Dave:
-scomber<- read_excel('data/FishData_HB1603_ScomberCheck.xlsx', sheet=2)
+scomber<- read_excel(here('data','FishData_HB1603_ScomberCheck.xlsx'), sheet=2)
 scomber<- scomber[scomber$`Richardson ID`=="bluefin",]
 scomber<- scomber[,c("CRUISE_NAME", "STATION", "GEAR", "COUNT_AT_LENGTH", "LENGTH")]
 scomber_long <- as.data.frame(lapply(scomber, rep, scomber$COUNT_AT_LENGTH))
@@ -193,7 +194,6 @@ scomber_long<- scomber_long[,names(usalengths)]
 
 all_lengths_SS<- rbind(usalengths, polandlengths_long, scomber_long)
 
-
 # Join the otolith data and length data:
 SS_oto_data<- merge(SS_oto_data, all_lengths_SS)
 dim(SS_oto_data)
@@ -209,12 +209,37 @@ incwidthSS<- outer-inner
 incwidthSS<- cbind(SS_oto_data[,c("Cruise", "Station", "Gear","Fish")], incwidthSS)
 names(incwidthSS)<- c("Cruise", "Station", "Gear", "Fish", "Inc1", "Inc2", "Inc3", "Inc4", "Inc5", "Inc6", "Inc7")
 
+### Check which of the possible lapillae need to be excluded from the data:
+to_exclude<- read_xlsx(here('data','SlopeSea_PossibleLapillae.xlsx'))
+plot(SS_oto_data$Increments, SS_oto_data$Radius, pch=19, xlab='Increments', ylab='Radius')
+for (i in 1:length(to_exclude$Cruise)){
+  I<- which(SS_oto_data$Station==to_exclude$Station[i] &
+              SS_oto_data$Fish==to_exclude$Fish[i])
+  points(SS_oto_data$Increments[I], SS_oto_data$Radius[I], pch=19, col='red')
+}
+## From this plot, we determined that the only ones that are likely to be lapillae
+## and that, therefore, should be excluded, are the ones with 2 increments because
+## they fall at the bottom of the distribution of otolith radius for otoliths with 
+## 2 increments.
+
+# So, find the ones that have 2 increments:
+to_exclude<- merge(to_exclude, SS_oto_data[,c("Cruise", "Station", "Gear", "Fish", "Increments")])
+to_exclude<- to_exclude[to_exclude$Increments==2,]
+# And now exclude them from the data:
+for (i in 1:length(to_exclude$Cruise)){
+  I<- which(SS_oto_data$Station==to_exclude$Station[i] &
+              SS_oto_data$Fish==to_exclude$Fish[i])
+  SS_oto_data<- SS_oto_data[-I,]
+  I<- which(incwidthSS$Station==to_exclude$Station[i] &
+              incwidthSS$Fish==to_exclude$Fish[i])
+  incwidthSS<- incwidthSS[-I,]
+}
+
 # Clean up the workspace:
-rm(inner, outer)
+rm(inner, outer, to_exclude)
 rm(babybongo_samples, query_stations, bongoZ_samples, bongoI_samples, framenet_samples, to_merge)
 rm(polandlengths, polanddata)
 rm(all3reads, bothreads, fishID, read1, read2, read3)
 rm(read2_tokeep, read3_tokeep, cruise, filenames, fishNum, I, J, NAcolumns, shuffledorder, shuffledorder2, station)
 rm(slopeseaoperations, polandlengths_long)
-
 

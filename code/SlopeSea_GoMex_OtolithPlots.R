@@ -1,9 +1,12 @@
 #### Run otolith processing steps and make figures
 
+library(here)
+library(readxl)
+
 # run the Slope Sea processing script:
-source('SlopeSeaOtoProcess.R')
+source(here("code",'SlopeSeaOtoProcess.R'))
 # run the Gulf of Mexico processing script:
-source('GoMexOtoProcess.R')
+source(here("code",'GoMexOtoProcess.R'))
 
 ## Construct age-length relationships for the Slope Sea reads:
 # make a linear model of age and length
@@ -22,7 +25,7 @@ GOM_agelength_sub4inc<- lm(SL_mm_EtOH~Increments, data=GOM_oto_data[GOM_oto_data
 summary(GOM_agelength_sub4inc)
 
 ## Slope Sea plots:
-png(filename='results/SlopeSea2016_SizeAtAge.png', height=6.5, width=7.5, 
+png(filename='results/SlopeSea2016_SizeAtAge_ExcludeLapillae.png', height=6.5, width=7.5, 
     units= 'in', res=300)
 plot(SS_oto_data$Increments, SS_oto_data$Length, xlab='Daily Increments', 
      ylab='Standard Length (mm)', pch=1, cex=1.25, cex.lab=1.5, cex.axis=1.5,
@@ -47,7 +50,7 @@ dev.off()
 
 # make a copy as an eps file:
 setEPS()
-postscript('results/SlopeSea2016_SizeAtAge.eps', height=6.5, width=7.5)
+postscript('results/SlopeSea2016_SizeAtAge_ExcludeLapillae.eps', height=6.5, width=7.5)
 plot(SS_oto_data$Increments, SS_oto_data$Length, xlab='Daily Increments', 
      ylab='Standard Length (mm)', pch=1, cex=1.25, cex.lab=1.5, cex.axis=1.5,
      xlim=c(0,13), ylim=c(2, 8))
@@ -70,7 +73,7 @@ legend("bottomright", legend=c("SS 0-8 inc", "SS 0-4 inc", "GOM 0-8 inc", "GOM 0
 dev.off()
 
 # radius at age:
-png(filename='results/SlopeSea2016_RadiusAtAge.png', height=6.5, width=7.5, 
+png(filename='results/SlopeSea2016_RadiusAtAge_ExcludeLapillae.png', height=6.5, width=7.5, 
     units= 'in', res=300)
 plot(SS_oto_data$Increments, SS_oto_data$Radius, xlab='Daily Increments', 
      ylab='Otolith Radius (um)', pch=19)
@@ -79,13 +82,13 @@ summary(SS_radatage)
 exes<- 0:14
 whys<- summary(SS_radatage)$coefficients[1,1]+summary(SS_radatage)$coefficients[2,1]*exes
 lines(exes, whys)
-text(1, 35, "Radius=10.88+2.64*DI", pos=4, cex=1.5)
+text(1, 35, "Radius=11.01+2.62*DI", pos=4, cex=1.5)
 dev.off()
 
 
 ## Gulf of Mexico otolith figures:
 # plot of size at age (to file)
-png(filename='results/GoMex2016_SizeAtAge.png', height=6.5, width=7.5, 
+png(filename='results/GoMex2016_SizeAtAge_ExcludeLapillae.png', height=6.5, width=7.5, 
     units= 'in', res=300)
 plot(GOM_oto_data$Increments, GOM_oto_data$SL_mm_EtOH, xlab='Daily Increments', 
      ylab='Standard Length (mm)', pch=1, cex=1.25, cex.lab=1.5, cex.axis=1.5,
@@ -117,7 +120,7 @@ dev.off()
 
 # make a copy as an EPS file:
 setEPS()
-postscript('results/GoMex2016_SizeAtAge.eps', height=6.5, width=7.5)
+postscript('results/GoMex2016_SizeAtAge_ExcludeLapillae.eps', height=6.5, width=7.5)
 plot(GOM_oto_data$Increments, GOM_oto_data$SL_mm_EtOH, xlab='Daily Increments', 
      ylab='Standard Length (mm)', pch=1, cex=1.25, cex.lab=1.5, cex.axis=1.5,
      xlim=c(0,13), ylim=c(2, 8))
@@ -146,35 +149,17 @@ legend("bottomright", legend=c("GOM 0-13 inc", "GOM 0-8 inc", "GOM 0-4 inc", "SS
        lty=c(3,1,2,1,2), lwd=1.5, col=c("black", "black", "black", "grey", "grey"))
 dev.off()
 
-# radius at age (to get rid of shrinkage differences)
-png(filename='results/GoM2016_RadiusAtAge.png', height=6.5, width=7.5, 
-    units= 'in', res=300)
-plot(GOM_oto_data$Increments, GOM_oto_data$Radius, xlab='Daily Increments', 
-     ylab='Otolith Radius (um)', pch=19)
-GOM_radatage<- lm(Radius~Increments, data=GOM_oto_data)
-summary(GOM_radatage)
-exes<- 0:14
-whys<- summary(GOM_radatage)$coefficients[1,1]+summary(GOM_radatage)$coefficients[2,1]*exes
-lines(exes, whys)
-text(1, 55, "Radius=9.44+3.16*DI", pos=4, cex=1.5)
-# line for fish up to 8 increments, to match with the SS data:
-GOM_radatage_sub8inc<- lm(Radius~Increments, data=GOM_oto_data[GOM_oto_data$Increments<9,])
-summary(GOM_radatage_sub8inc)
-exes2<- 1:8
-whys2<- summary(GOM_radatage_sub8inc)$coefficients[1,1]+summary(GOM_radatage_sub8inc)$coefficients[2,1]*exes2
-lines(exes2, whys2, lty=2)
-text(1, 50, "Radius=9.81+3.05*DI", pos=4)
-dev.off()
-
-
 ## Increment width figure:
 # Daily increment widths: only for increments with n=3 or more
 counts<- apply(incwidthSS, 2, function(x){sum(!is.na(x))})
 I<- which(counts>=3)
 subincSS<- incwidthSS[,I]
-means<- apply(subincSS[,-1], 2, FUN=mean, na.rm=TRUE)
+# find the columns that contain "Inc"
+j<-which(names(subincSS)=="Inc1")
+k<- length(names(subincSS))
+means<- apply(subincSS[,j:k], 2, FUN=mean, na.rm=TRUE)
 SE<- function(x){sd(x, na.rm=TRUE)/sqrt(sum(!is.na(x)))}
-serror<- apply(subincSS[,-1], 2, FUN=SE)
+serror<- apply(subincSS[,j:k], 2, FUN=SE)
 maxes<- means+serror
 
 # do the same for the GoM, but only fish with 8 increments or less
@@ -187,7 +172,7 @@ maxesGOM<- meansGOM+serrorGOM
 xlimz<- c(0.5,7.5)
 ylimz<- c(0, max(c(maxes, maxesGOM), na.rm=TRUE))
 
-png(filename='results/SS_GOM_2016_IncWidth.png', height=6.5, width=7.5, units= 'in', res=300)
+png(filename='results/SS_GOM_2016_IncWidth_ExcludeLapillae.png', height=6.5, width=7.5, units= 'in', res=300)
 exes<- seq(from=0.9, by=1, length.out = length(means))
 plot(exes, means, pch=19, xlab='Increment', ylab='Mean Increment Width (um)',
      xlim=xlimz, ylim=ylimz, cex=1.25, cex.lab=1.5, cex.axis=1.5, 
@@ -201,7 +186,7 @@ dev.off()
 
 # make a copy as an eps:
 setEPS()
-postscript('results/SS_GOM_2016_IncWidth.eps', height=6.5, width=7.5)
+postscript('results/SS_GOM_2016_IncWidth_ExcludeLapillae.eps', height=6.5, width=7.5)
 exes<- seq(from=0.9, by=1, length.out = length(means))
 plot(exes, means, pch=19, xlab='Increment', ylab='Mean Increment Width (um)',
      xlim=xlimz, ylim=ylimz, cex=1.25, cex.lab=1.5, cex.axis=1.5, 
@@ -259,3 +244,59 @@ mat_inv_GOM<- mat_inv_GOM[!is.na(mat_inv_GOM)]
 mat_inv_SS<- SS_oto_data$ToRing2[SS_oto_data$Increments<=4]
 mat_inv_SS<- mat_inv_SS[!is.na(mat_inv_SS)]
 t.test(mat_inv_SS, mat_inv_GOM, alternative="two.sided", var.equal = F)
+
+## Otolith Radii:
+# Daily radii: only for increments with n=3 or more
+counts<- apply(SS_oto_data, 2, function(x){sum(!is.na(x))})
+I<- which(counts>=3)
+subotoSS<- SS_oto_data[,I]
+# find the columns that contain "ToRing"
+j<-which(names(subotoSS)=="ToRing2") # because "ToRing1" is the edge of the core
+k<- which(names(subotoSS)=="ToRing7")
+means<- apply(subotoSS[,j:k], 2, FUN=mean, na.rm=TRUE)
+SE<- function(x){sd(x, na.rm=TRUE)/sqrt(sum(!is.na(x)))}
+serror<- apply(subotoSS[,j:k], 2, FUN=SE)
+maxes<- means+serror
+
+# do the same for the GoM, but only fish with 8 increments or less
+GOM_oto_data_sub8inc<- GOM_oto_data[GOM_oto_data$Increments<9,]
+counts<- apply(GOM_oto_data_sub8inc, 2, function(x){sum(!is.na(x))})
+I<- which(counts>=3)
+subotoGOM<- GOM_oto_data_sub8inc[,I]
+# find the columns that contain "ToRing"
+j<-which(names(subotoGOM)=="ToRing2") # because "ToRing1" is the edge of the core
+k<- which(names(subotoGOM)=="ToRing9")
+meansGOM<- apply(subotoGOM[,j:k], 2, FUN=mean, na.rm=TRUE)
+serrorGOM<- apply(subotoGOM[,j:k], 2, FUN=SE)
+maxesGOM<- meansGOM+serrorGOM
+
+# axis limits:
+xlimz<- c(0.5,7.5)
+ylimz<- c(0, max(c(maxes, maxesGOM), na.rm=TRUE))
+
+png(filename='results/SS_GOM_2016_Radii_ExcludeLapillae.png', height=6.5, width=7.5, units= 'in', res=300)
+exes<- seq(from=0.9, by=1, length.out = length(means))
+plot(exes, means, pch=19, xlab='Increment', ylab='Mean Increment Width (um)',
+     xlim=xlimz, ylim=ylimz, cex=1.25, cex.lab=1.5, cex.axis=1.5, 
+     xaxp=c(1,8,7))
+arrows(exes, means-serror, exes, means+serror, length=0.05, angle=90, code=3)
+exes<- seq(from=1.1, by=1, length.out = length(meansGOM))
+points(exes, meansGOM, pch=2, cex=1.25)
+arrows(exes, meansGOM-serrorGOM, exes, meansGOM+serrorGOM, length=0.05, angle=90, code=3)
+legend('topleft', legend=c('Slope Sea', 'Gulf of Mexico'), pch=c(19, 2), cex=1.5)
+dev.off()
+
+# make a copy as an eps:
+setEPS()
+postscript('results/SS_GOM_2016_Radii_ExcludeLapillae.eps', height=6.5, width=7.5)
+exes<- seq(from=0.9, by=1, length.out = length(means))
+plot(exes, means, pch=19, xlab='Increment', ylab='Mean Increment Width (um)',
+     xlim=xlimz, ylim=ylimz, cex=1.25, cex.lab=1.5, cex.axis=1.5, 
+     xaxp=c(1,8,7))
+arrows(exes, means-serror, exes, means+serror, length=0.05, angle=90, code=3)
+exes<- seq(from=1.1, by=1, length.out = length(meansGOM))
+points(exes, meansGOM, pch=2, cex=1.25)
+arrows(exes, meansGOM-serrorGOM, exes, meansGOM+serrorGOM, length=0.05, angle=90, code=3)
+legend('topleft', legend=c('Slope Sea', 'Gulf of Mexico'), pch=c(19, 2), cex=1.5)
+dev.off()
+
