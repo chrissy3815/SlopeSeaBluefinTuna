@@ -146,9 +146,9 @@ SS2016_netdata$Operation[I]<- "BON/CTD"
 I<- which(SS2016_netdata$Gear=="2N3")
 SS2016_netdata$Operation[I]<- "CTD/IKMT"
 # exclude the volume filtered for a few samples that weren't sorted:
-not_sorted<- data.frame(Cruise=c(rep("HB1603",2),"GU1608"), 
-                        Station=c(36,125,240), 
-                        Gear = c(rep("6B3I", 2), "6B3Z"))
+not_sorted<- data.frame(Cruise=rep("HB1603",4), 
+                        Station=c(16, 36,125,121), 
+                        Gear = rep("6B3I", 4))
 to_exclude<- vector()
 for (i in 1:length(not_sorted$Cruise)){
         J<- which(SS2016_netdata$Cruise==not_sorted$Cruise[i] &

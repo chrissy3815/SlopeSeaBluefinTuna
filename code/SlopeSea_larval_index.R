@@ -1,6 +1,8 @@
 
+library(here)
+
 # run the Slope Sea processing script:
-source('SlopeSeaOtoProcess.R')
+source(here('code','SlopeSeaOtoProcess.R'))
 
 # we'll use only the bongo samples:
 # drop the 2B1 samples:
@@ -27,9 +29,9 @@ SS2016_netdata$Operation<- NA
 I<- which(SS2016_netdata$Gear=="6B3I" | SS2016_netdata$Gear=="6B3" | SS2016_netdata$Gear=="6B3Z")
 SS2016_netdata$Operation[I]<- "BON/CTD"
 # exclude the volume filtered for a few samples that weren't sorted:
-not_sorted<- data.frame(Cruise=c(rep("HB1603",2),"GU1608"), 
-                        Station=c(36,125,240), 
-                        Gear = c(rep("6B3I", 2), "6B3Z"))
+not_sorted<- data.frame(Cruise=rep("HB1603",4), 
+                        Station=c(16, 36,125,121), 
+                        Gear = rep("6B3I", 4))
 to_exclude<- vector()
 for (i in 1:length(not_sorted$Cruise)){
   J<- which(SS2016_netdata$Cruise==not_sorted$Cruise[i] &
@@ -68,6 +70,8 @@ for (i in 1:length(not_sorted$Cruise)){
     SS2016_eventdata<- SS2016_eventdata[-J,]
   }
 }
+# merge with the tuna data:
+all_lengths_SS<- merge(all_lengths_SS, SS2016_eventdata, all.x=T, all.y=F)
 
 #count how many events fit our criteria of June 15-August 15, in water 1000 m or deeper
 june<- which(SS2016_eventdata$Month=="JUN" & 
@@ -80,9 +84,6 @@ aug<- which(SS2016_eventdata$Month=="AUG" &
               SS2016_eventdata$Day<=15)
 # ny is the number of total stations sampled:
 n2016<- length(june) + length(july) + length(aug)
-
-# merge with the tuna data:
-all_lengths_SS<- merge(all_lengths_SS, SS2016_eventdata, all.x=T, all.y=F)
 
 # drop station 68 because it's in shallow water:
 I<- which(all_lengths_SS$BottomDepth<1000)

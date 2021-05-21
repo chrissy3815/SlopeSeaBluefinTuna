@@ -45,6 +45,73 @@ all_bongo_stns$Abundance[is.na(all_bongo_stns$Abundance)]<- 0
 # some of the day column is a character and it seems to be messing things up.
 all_bongo_stns$Day<- as.numeric(all_bongo_stns$Day)
 
+# we need a second object, with the individual-level data required to calculate 
+# the larval index: Starting from all_lengths_SS, we'll use only the bongo samples:
+# drop the 2B1 samples.
+I<- which(all_lengths_SS$Gear=="2B1")
+all_lengths_SS<- all_lengths_SS[-I,]
+# drop the 2N3 samples as well:
+I<- which(all_lengths_SS$Gear=="2N3")
+all_lengths_SS<- all_lengths_SS[-I,]
+# add the "Operation" column:
+all_lengths_SS$Operation<- NA
+I<- which(all_lengths_SS$Gear=="6B3I" | all_lengths_SS$Gear=="6B3" | all_lengths_SS$Gear=="6B3Z")
+all_lengths_SS$Operation[I]<- "BON/CTD"
+# drop those 3 NA lengths:
+I<- which(is.na(all_lengths_SS$Length))
+all_lengths_SS<- all_lengths_SS[-I,]
+# need to add the volume filtered:
+SS2016_netdata<- read.csv('data/GU1608HB1603Net.csv')
+# pull out the relevant columns:
+SS2016_netdata<- SS2016_netdata[,c("CRUISE_NAME", "STATION", "GEAR", "GEAR_VOLUME_FILTERED")]
+names(SS2016_netdata)<- c("Cruise", "Station", "Gear", "Vol_filtered")
+# add the Operation column:
+SS2016_netdata$Operation<- NA
+I<- which(SS2016_netdata$Gear=="6B3I" | SS2016_netdata$Gear=="6B3" | SS2016_netdata$Gear=="6B3Z")
+SS2016_netdata$Operation[I]<- "BON/CTD"
+# exclude the volume filtered for a few samples that weren't sorted:
+not_sorted<- data.frame(Cruise=rep("HB1603",4), 
+                        Station=c(16,36,125,121), 
+                        Gear = rep("6B3I", 4))
+to_exclude<- vector()
+for (i in 1:length(not_sorted$Cruise)){
+  J<- which(SS2016_netdata$Cruise==not_sorted$Cruise[i] &
+              SS2016_netdata$Station==not_sorted$Station[i] &
+              SS2016_netdata$Gear==not_sorted$Gear[i])
+  to_exclude<- c(to_exclude,J)
+}
+SS2016_netdata<- SS2016_netdata[-to_exclude,]
+# we're going to combine the Bongo samples:
+SS2016_netdata<- aggregate(Vol_filtered~Cruise+Station+Operation, 
+                           data=SS2016_netdata, FUN=sum, na.rm=T)
+# merge with the all_lengths_SS:
+all_lengths_SS<- merge(all_lengths_SS, SS2016_netdata, all.x=T, all.y=F)
+# need to add the sampling depth and lat/lon:
+SS2016_eventdata<- read.csv('data/GU1608HB1603Event.csv')
+# pull out the relevant columns:
+SS2016_eventdata<- SS2016_eventdata[,c("CRUISE_NAME", "STATION", "OPERATION", 
+                                       "TOW_MAXIMUM_DEPTH", "BOTTOM_DEPTH_MAX_WIRE_OUT",
+                                       "LATITUDE", "LONGITUDE", "EVENT_DATE")]
+names(SS2016_eventdata)<- c("Cruise", "Station", "Operation", "SamplingDepth",
+                            "BottomDepth", "Latitude", "Longitude", "Date")
+# we want only the bongo events:
+SS2016_eventdata<- SS2016_eventdata[SS2016_eventdata$Operation=="BON/CTD",]
+# get day and month out:
+SSmoday<- strsplit(SS2016_eventdata$Date, "-")
+SS2016_eventdata$Day<- sapply(SSmoday, '[', 1)
+SS2016_eventdata$Month<- sapply(SSmoday, '[', 2)
+# merge with the tuna data:
+all_lengths_SS<- merge(all_lengths_SS, SS2016_eventdata, all.x=T, all.y=F)
+# add the DI column, using the deterministic age-length relationship and round to nearest increment
+SS_agelength_inverse<- lm(Increments~Length, data=SS_oto_data)
+all_lengths_SS$DI<- SS_agelength_inverse$coefficients[1] +
+  all_lengths_SS$Length*SS_agelength_inverse$coefficients[2]
+all_lengths_SS$DI<- round(all_lengths_SS$DI)
+# I<- which(all_lengths_SS$DI<=0)
+#all_lengths_SS<- all_lengths_SS[-I,]
+#all_lengths_SS$DI[all_lengths_SS$DI<0]<- 0
+all_lengths_SS$DI[all_lengths_SS$DI<0]<- 1
+
 ## configurations:
 
 #1. Gunther and Bigelow cruises, June 17-Aug 15, 1000 m and deeper
@@ -52,7 +119,6 @@ I<- which(all_bongo_stns$Month=="AUG" & all_bongo_stns$Day>15)
 subdata<- all_bongo_stns[-I,] # drop the late august stations
 I<- which(subdata$BottomDepth<1000)
 subdata<- subdata[-I,] # drop the shallow stations
-write.csv(subdata,file=here("results","Mean1Chrissy_210511.csv"))
 meanAbund<- mean(subdata$Abundance)
 meanAbund
 meanPosStn<- mean(subdata$Abundance[subdata$Abundance>0])
@@ -142,6 +208,7 @@ stratMean
 stratMeanPos<- 1/(shelfbreak_area+offshore_area)*(shelfbreakmeanPos*shelfbreak_area+offshoremeanPos*offshore_area)
 stratMeanPos
 
+
 #6. Bigelow cruise only, 42 day window (June 28-Aug 8) include all stations, stratified mean
 # make a spatial points object of the subset of the stations
 pointdata<- all_bongo_stns[all_bongo_stns$Cruise=="HB1603",]
@@ -203,3 +270,5 @@ seamapmean<- mean(seamap_bongos$Abundance)
 seamapmean
 seamapmeanPos<- mean(seamap_bongos$Abundance[seamap_bongos$Abundance>0])
 seamapmeanPos
+
+
