@@ -25,7 +25,7 @@ GOM_agelength_sub4inc<- lm(SL_mm_EtOH~Increments, data=GOM_oto_data[GOM_oto_data
 summary(GOM_agelength_sub4inc)
 
 ## Slope Sea plots:
-png(filename='results/SlopeSea2016_SizeAtAge_ExcludeLapillae.png', height=6.5, width=7.5, 
+png(filename='results/SlopeSea2016_SizeAtAge.png', height=6.5, width=7.5, 
     units= 'in', res=300)
 plot(SS_oto_data$Increments, SS_oto_data$Length, xlab='Daily Increments', 
      ylab='Standard Length (mm)', pch=1, cex=1.25, cex.lab=1.5, cex.axis=1.5,
@@ -50,7 +50,7 @@ dev.off()
 
 # make a copy as an eps file:
 setEPS()
-postscript('results/SlopeSea2016_SizeAtAge_ExcludeLapillae.eps', height=6.5, width=7.5)
+postscript('results/SlopeSea2016_SizeAtAge.eps', height=6.5, width=7.5)
 plot(SS_oto_data$Increments, SS_oto_data$Length, xlab='Daily Increments', 
      ylab='Standard Length (mm)', pch=1, cex=1.25, cex.lab=1.5, cex.axis=1.5,
      xlim=c(0,13), ylim=c(2, 8))
@@ -73,7 +73,7 @@ legend("bottomright", legend=c("SS 0-8 inc", "SS 0-4 inc", "GOM 0-8 inc", "GOM 0
 dev.off()
 
 # radius at age:
-png(filename='results/SlopeSea2016_RadiusAtAge_ExcludeLapillae.png', height=6.5, width=7.5, 
+png(filename='results/SlopeSea2016_RadiusAtAge.png', height=6.5, width=7.5, 
     units= 'in', res=300)
 plot(SS_oto_data$Increments, SS_oto_data$Radius, xlab='Daily Increments', 
      ylab='Otolith Radius (um)', pch=19)
@@ -88,7 +88,7 @@ dev.off()
 
 ## Gulf of Mexico otolith figures:
 # plot of size at age (to file)
-png(filename='results/GoMex2016_SizeAtAge_ExcludeLapillae.png', height=6.5, width=7.5, 
+png(filename='results/GoMex2016_SizeAtAge.png', height=6.5, width=7.5, 
     units= 'in', res=300)
 plot(GOM_oto_data$Increments, GOM_oto_data$SL_mm_EtOH, xlab='Daily Increments', 
      ylab='Standard Length (mm)', pch=1, cex=1.25, cex.lab=1.5, cex.axis=1.5,
@@ -120,7 +120,7 @@ dev.off()
 
 # make a copy as an EPS file:
 setEPS()
-postscript('results/GoMex2016_SizeAtAge_ExcludeLapillae.eps', height=6.5, width=7.5)
+postscript('results/GoMex2016_SizeAtAge.eps', height=6.5, width=7.5)
 plot(GOM_oto_data$Increments, GOM_oto_data$SL_mm_EtOH, xlab='Daily Increments', 
      ylab='Standard Length (mm)', pch=1, cex=1.25, cex.lab=1.5, cex.axis=1.5,
      xlim=c(0,13), ylim=c(2, 8))
@@ -172,7 +172,7 @@ maxesGOM<- meansGOM+serrorGOM
 xlimz<- c(0.5,7.5)
 ylimz<- c(0, max(c(maxes, maxesGOM), na.rm=TRUE))
 
-png(filename='results/SS_GOM_2016_IncWidth_ExcludeLapillae.png', height=6.5, width=7.5, units= 'in', res=300)
+png(filename='results/SS_GOM_2016_IncWidth.png', height=6.5, width=7.5, units= 'in', res=300)
 exes<- seq(from=0.9, by=1, length.out = length(means))
 plot(exes, means, pch=19, xlab='Increment', ylab='Mean Increment Width (um)',
      xlim=xlimz, ylim=ylimz, cex=1.25, cex.lab=1.5, cex.axis=1.5, 
@@ -186,7 +186,7 @@ dev.off()
 
 # make a copy as an eps:
 setEPS()
-postscript('results/SS_GOM_2016_IncWidth_ExcludeLapillae.eps', height=6.5, width=7.5)
+postscript('results/SS_GOM_2016_IncWidth.eps', height=6.5, width=7.5)
 exes<- seq(from=0.9, by=1, length.out = length(means))
 plot(exes, means, pch=19, xlab='Increment', ylab='Mean Increment Width (um)',
      xlim=xlimz, ylim=ylimz, cex=1.25, cex.lab=1.5, cex.axis=1.5, 
@@ -274,7 +274,7 @@ maxesGOM<- meansGOM+serrorGOM
 xlimz<- c(0.5,7.5)
 ylimz<- c(0, max(c(maxes, maxesGOM), na.rm=TRUE))
 
-png(filename='results/SS_GOM_2016_Radii_ExcludeLapillae.png', height=6.5, width=7.5, units= 'in', res=300)
+png(filename='results/SS_GOM_2016_Radii.png', height=6.5, width=7.5, units= 'in', res=300)
 exes<- seq(from=0.9, by=1, length.out = length(means))
 plot(exes, means, pch=19, xlab='Increment', ylab='Mean Increment Width (um)',
      xlim=xlimz, ylim=ylimz, cex=1.25, cex.lab=1.5, cex.axis=1.5, 
@@ -288,7 +288,7 @@ dev.off()
 
 # make a copy as an eps:
 setEPS()
-postscript('results/SS_GOM_2016_Radii_ExcludeLapillae.eps', height=6.5, width=7.5)
+postscript('results/SS_GOM_2016_Radii.eps', height=6.5, width=7.5)
 exes<- seq(from=0.9, by=1, length.out = length(means))
 plot(exes, means, pch=19, xlab='Increment', ylab='Mean Increment Width (um)',
      xlim=xlimz, ylim=ylimz, cex=1.25, cex.lab=1.5, cex.axis=1.5, 

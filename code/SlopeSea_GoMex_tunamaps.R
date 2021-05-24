@@ -5,7 +5,6 @@ library(ocedata)
 library(ncdf4)
 library(here)
 
-
 # run the Slope Sea processing scripts:
 source(here("code", "SlopeSeaOtoProcess.R"))
 source(here("code","SlopeSeaAbundProcess.R"))
@@ -100,44 +99,14 @@ dev.off()
 
 #### Okay, and the main event, a map of Slope Sea larval distributions:
 
+# restrict to bongo stations through Aug 15:
+I<- which(all_bongo_stns$Month=="AUG" & all_bongo_stns$Day>15)
+all_bongo_stns<- all_bongo_stns[-I,]
 
-# make a map for Slope Sea abundance!        
-
-# find the zero stations:
-SS2016_eventdata<- read.csv('data/GU1608HB1603Event.csv')
-# pull out the relevant columns:
-SS2016_eventdata<- SS2016_eventdata[,c("CRUISE_NAME", "STATION", "OPERATION", 
-                                       "TOW_MAXIMUM_DEPTH", "BOTTOM_DEPTH_MAX_WIRE_OUT",
-                                       "LATITUDE", "LONGITUDE", "EVENT_DATE")]
-names(SS2016_eventdata)<- c("Cruise", "Station", "Operation", "SamplingDepth",
-                            "BottomDepth", "Latitude", "Longitude", "Date")
-# get day and month out:
-SSmoday<- strsplit(SS2016_eventdata$Date, "-")
-SS2016_eventdata$Day<- sapply(SSmoday, '[', 1)
-SS2016_eventdata$Month<- sapply(SSmoday, '[', 2)
-# restrict to the bongo stations:
-zerostations<- SS2016_eventdata[SS2016_eventdata$Operation=="BON/CTD",]
-I<- which(zerostations$BottomDepth<1000)
-zerostations<- zerostations[-I,]
-I<- which(zerostations$Month=='AUG' & zerostations$Day>15)
-zerostations<- zerostations[-I,]
-I<- which(zerostations$Month=="MAY")
-zerostations<- zerostations[-I,]
-temp<- tunacounts_SS[tunacounts_SS$Operation=="BON/CTD",]
-I<- which(zerostations$Station %in% temp$Station)
-zerostations<- zerostations[-I,]
-# check that all these zero stations were sorted in Poland:
-polanddata_all<- read.csv('data/HB1603_GU1608_IchData_7Nov2019.csv')
-polanddata_all_stations<- unique(polanddata_all[,c("CRUISE_NAME", "STATION")])
-exclude<- vector()
-for (i in 1:length(zerostations$Station)){
-        J<- which(polanddata_all_stations$CRUISE_NAME==zerostations$Cruise[i] &
-                  polanddata_all_stations$STATION==zerostations$Station[i])
-        if (length(J)<1){
-                exclude<- c(exclude, i)
-        }
-}
-zerostations<- zerostations[-exclude,]
+# pull out the zero stations:
+zerostations<- all_bongo_stns[all_bongo_stns$Abundance==0 & all_bongo_stns$BottomDepth>=1000,]
+# pull out the positive stations:
+catchstations<- all_bongo_stns[all_bongo_stns$Abundance>0,]
 
 # Load in the coastlines
 data(coastlineWorldFine, package="ocedata")
@@ -150,12 +119,12 @@ nc_close(ncid)
 
 # plot as eps:
 setEPS()
-postscript('results/SS2016_abund_map_120720.eps', height=5.5, width=7)
+postscript('results/SS2016_abund_map_through_Aug15_1000m.eps', height=5.5, width=7)
 plot(coastlineWorldFine, longitudelim=c(-64, -76), latitudelim=c(34, 42))
 contour(lon, lat, elev, levels=c(-100, -200, -1000, -2000), add=TRUE, 
         drawlabels=FALSE, lwd=0.75, col='dark grey')
-points(tunacounts_SS$Longitude, tunacounts_SS$Latitude,
-       cex=sqrt(tunacounts_SS$Abundance)/1.2, lwd=2)
+points(catchstations$Longitude, catchstations$Latitude,
+       cex=sqrt(catchstations$Abundance)/1.2, lwd=2)
 points(zerostations$Longitude, zerostations$Latitude, pch=3, lwd=1.5)
 # add a legend
 legend(-65, 37, legend=c('0', '2', '5', '10', '20'), 

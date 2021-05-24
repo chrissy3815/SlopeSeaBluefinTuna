@@ -11,6 +11,15 @@ library(rgdal)
 # load data:
 source(here("code", "SlopeSeaAbundProcess.R"))
 
+# load SEAMAP data from 2016:
+source(here("code", "GoMexAbundProcess.R"))
+
+# initialize the table:
+larvAbundSensTbl<- data.frame(Configuration = vector(),
+                              NDays = vector(),
+                              MeanAbund = vector(),
+                              MeanAbundPosStn = vector())
+
 ## configurations:
 
 #1. Gunther and Bigelow cruises, June 17-Aug 15, 1000 m and deeper
@@ -19,9 +28,13 @@ subdata<- all_bongo_stns[-I,] # drop the late august stations
 I<- which(subdata$BottomDepth<1000)
 subdata<- subdata[-I,] # drop the shallow stations
 meanAbund<- mean(subdata$Abundance)
-meanAbund
 meanPosStn<- mean(subdata$Abundance[subdata$Abundance>0])
-meanPosStn
+# add row to table:
+newrow<- data.frame(Configuration = "GU1608+HB1603, June 17-Aug 15, 1000m and deeper",
+                    NDays = (30-16)+31+15,
+                    MeanAbund = meanAbund,
+                    MeanAbundPosStn = meanPosStn)
+larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
 
 #2. Bigelow cruise only, June 28-Aug 15, 1000 m and deeper
 I<- which(all_bongo_stns$Cruise=="HB1603")
@@ -31,9 +44,13 @@ subdata<- subdata[-I,] # drop the late august stations
 I<- which(subdata$BottomDepth<1000)
 subdata<- subdata[-I,] # drop the shallow samples
 meanAbund<- mean(subdata$Abundance)
-meanAbund
 meanPosStn<- mean(subdata$Abundance[subdata$Abundance>0])
-meanPosStn
+# add row to table:
+newrow<- data.frame(Configuration = "HB1603, June 28-Aug 15, 1000m and deeper",
+                    NDays = (30-28)+31+15,
+                    MeanAbund = meanAbund,
+                    MeanAbundPosStn = meanPosStn)
+larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
 
 #3. Bigelow cruise only, 42-day window (June 28 - Aug 8)
 I<- which(all_bongo_stns$Cruise=="HB1603")
@@ -41,9 +58,13 @@ subdata<- all_bongo_stns[I,] # pull out only the Bigelow cruise samples
 I<- which(subdata$Month=="AUG" & subdata$Day>8)
 subdata<- subdata[-I,] # drop the later august stations
 meanAbund<- mean(subdata$Abundance)
-meanAbund
 meanPosStn<- mean(subdata$Abundance[subdata$Abundance>0])
-meanPosStn
+# add row to table:
+newrow<- data.frame(Configuration = "HB1603, June 28-Aug 8",
+                    NDays = (30-28)+31+8,
+                    MeanAbund = meanAbund,
+                    MeanAbundPosStn = meanPosStn)
+larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
 
 #4. Bigelow cruise only, 42-day window (June 28 - Aug 8), 1000 m or deeper
 I<- which(all_bongo_stns$Cruise=="HB1603")
@@ -53,9 +74,13 @@ subdata<- subdata[-I,] # drop the later august stations
 I<- which(subdata$BottomDepth<1000)
 subdata<- subdata[-I,] # drop the shallow stations
 meanAbund<- mean(subdata$Abundance)
-meanAbund
 meanPosStn<- mean(subdata$Abundance[subdata$Abundance>0])
-meanPosStn
+# add row to table:
+newrow<- data.frame(Configuration = "HB1603, June 28-Aug 8, 1000m and deeper",
+                    NDays = (30-28)+31+8,
+                    MeanAbund = meanAbund,
+                    MeanAbundPosStn = meanPosStn)
+larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
 
 #5. Bigelow cruise only, include all stations, stratified mean
 # load strata:
@@ -106,6 +131,12 @@ stratMean<- 1/(shelfbreak_area+offshore_area)*(shelfbreakmean*shelfbreak_area+of
 stratMean
 stratMeanPos<- 1/(shelfbreak_area+offshore_area)*(shelfbreakmeanPos*shelfbreak_area+offshoremeanPos*offshore_area)
 stratMeanPos
+# add row to table:
+newrow<- data.frame(Configuration = "HB1603, June 28-Aug 24, stratified mean",
+                    NDays = (30-28)+31+24,
+                    MeanAbund = stratMean,
+                    MeanAbundPosStn = stratMeanPos)
+larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
 
 
 #6. Bigelow cruise only, 42 day window (June 28-Aug 8) include all stations, stratified mean
@@ -130,9 +161,13 @@ shelfbreakmeanPos<- mean(shelfbreakpoints$Abundance[shelfbreakpoints$Abundance>0
 shelfbreakmeanPos
 # calculate the stratified means:
 stratMean<- 1/(shelfbreak_area+offshore_area)*(shelfbreakmean*shelfbreak_area+offshoremean*offshore_area)
-stratMean
 stratMeanPos<- 1/(shelfbreak_area+offshore_area)*(shelfbreakmeanPos*shelfbreak_area+offshoremeanPos*offshore_area)
-stratMeanPos
+# add row to table:
+newrow<- data.frame(Configuration = "HB1603, June 28-Aug 8, stratified mean",
+                    NDays = (30-28)+31+8,
+                    MeanAbund = meanAbund,
+                    MeanAbundPosStn = meanPosStn)
+larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
 
 #7. Bigelow cruise only, 31 day window (June 28-July28) include all stations, stratified mean
 # make a spatial points object of the subset of the stations
@@ -160,14 +195,23 @@ shelfbreakmeanPos
 stratMean<- 1/(shelfbreak_area+offshore_area)*(shelfbreakmean*shelfbreak_area+offshoremean*offshore_area)
 stratMean
 stratMeanPos<- 1/(shelfbreak_area+offshore_area)*(shelfbreakmeanPos*shelfbreak_area+offshoremeanPos*offshore_area)
-stratMeanPos
+# add row to table:
+newrow<- data.frame(Configuration = "HB1603, June 28-July 28, stratified mean",
+                    NDays = (30-27)+28,
+                    MeanAbund = meanAbund,
+                    MeanAbundPosStn = meanPosStn)
+larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
 
 #8. SEAMAP data:
-# seamap_bongos object is already loaded in from running the tuna maps script.
 # this dataset that I have covers April 30 to May 30, 31 days.
 seamapmean<- mean(seamap_bongos$Abundance)
 seamapmean
 seamapmeanPos<- mean(seamap_bongos$Abundance[seamap_bongos$Abundance>0])
 seamapmeanPos
-
+# add row to table:
+newrow<- data.frame(Configuration = "SEAMAP 2016, June 28-Aug 8, stratified mean",
+                    NDays = (30-28)+31+8,
+                    MeanAbund = meanAbund,
+                    MeanAbundPosStn = meanPosStn)
+larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
 
