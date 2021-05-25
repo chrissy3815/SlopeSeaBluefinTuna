@@ -238,8 +238,8 @@ for (i in 1:length(to_exclude$Cruise)){
 # Clean up the workspace:
 rm(inner, outer, to_exclude)
 rm(babybongo_samples, query_stations, bongoZ_samples, bongoI_samples, framenet_samples, to_merge)
-rm(polandlengths, polanddata)
+rm(polandlengths, polanddata, usalengths, polanddata_agg)
 rm(all3reads, bothreads, fishID, read1, read2, read3)
 rm(read2_tokeep, read3_tokeep, cruise, filenames, fishNum, I, J, NAcolumns, shuffledorder, shuffledorder2, station)
-rm(slopeseaoperations, polandlengths_long)
+rm(slopeseaoperations, polandlengths_long, scomber, scomber_long, newrow, metadata)
 

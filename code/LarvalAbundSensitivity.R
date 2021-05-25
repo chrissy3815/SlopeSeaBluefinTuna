@@ -47,7 +47,7 @@ meanAbund<- mean(subdata$Abundance)
 meanPosStn<- mean(subdata$Abundance[subdata$Abundance>0])
 # add row to table:
 newrow<- data.frame(Configuration = "HB1603, June 28-Aug 15, 1000m and deeper",
-                    NDays = (30-28)+31+15,
+                    NDays = (30-27)+31+15,
                     MeanAbund = meanAbund,
                     MeanAbundPosStn = meanPosStn)
 larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
@@ -61,7 +61,7 @@ meanAbund<- mean(subdata$Abundance)
 meanPosStn<- mean(subdata$Abundance[subdata$Abundance>0])
 # add row to table:
 newrow<- data.frame(Configuration = "HB1603, June 28-Aug 8",
-                    NDays = (30-28)+31+8,
+                    NDays = (30-27)+31+8,
                     MeanAbund = meanAbund,
                     MeanAbundPosStn = meanPosStn)
 larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
@@ -77,7 +77,7 @@ meanAbund<- mean(subdata$Abundance)
 meanPosStn<- mean(subdata$Abundance[subdata$Abundance>0])
 # add row to table:
 newrow<- data.frame(Configuration = "HB1603, June 28-Aug 8, 1000m and deeper",
-                    NDays = (30-28)+31+8,
+                    NDays = (30-27)+31+8,
                     MeanAbund = meanAbund,
                     MeanAbundPosStn = meanPosStn)
 larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
@@ -133,7 +133,7 @@ stratMeanPos<- 1/(shelfbreak_area+offshore_area)*(shelfbreakmeanPos*shelfbreak_a
 stratMeanPos
 # add row to table:
 newrow<- data.frame(Configuration = "HB1603, June 28-Aug 24, stratified mean",
-                    NDays = (30-28)+31+24,
+                    NDays = (30-27)+31+24,
                     MeanAbund = stratMean,
                     MeanAbundPosStn = stratMeanPos)
 larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
@@ -164,7 +164,7 @@ stratMean<- 1/(shelfbreak_area+offshore_area)*(shelfbreakmean*shelfbreak_area+of
 stratMeanPos<- 1/(shelfbreak_area+offshore_area)*(shelfbreakmeanPos*shelfbreak_area+offshoremeanPos*offshore_area)
 # add row to table:
 newrow<- data.frame(Configuration = "HB1603, June 28-Aug 8, stratified mean",
-                    NDays = (30-28)+31+8,
+                    NDays = (30-27)+31+8,
                     MeanAbund = meanAbund,
                     MeanAbundPosStn = meanPosStn)
 larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
@@ -204,14 +204,50 @@ larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
 
 #8. SEAMAP data:
 # this dataset that I have covers April 30 to May 30, 31 days.
-seamapmean<- mean(seamap_bongos$Abundance)
+seamapmean<- mean(seamap_bluefin$Abundance)
 seamapmean
-seamapmeanPos<- mean(seamap_bongos$Abundance[seamap_bongos$Abundance>0])
+seamapmeanPos<- mean(seamap_bluefin$Abundance[seamap_bluefin$Abundance>0])
 seamapmeanPos
 # add row to table:
-newrow<- data.frame(Configuration = "SEAMAP 2016, June 28-Aug 8, stratified mean",
-                    NDays = (30-28)+31+8,
+newrow<- data.frame(Configuration = "SEAMAP 2016, April 30-May 30",
+                    NDays = 31,
+                    MeanAbund = seamapmean,
+                    MeanAbundPosStn = seamapmeanPos)
+larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
+
+#9. 2013 Slope Sea data: June 9 to Aug 18, 1000 m or deeper:
+I<- which((-1*all_bongos_2013$MODEL_DEPTH)>=1000)
+subdata<- all_bongos_2013[I,]
+meanAbund<- mean(subdata$Abundance)
+meanPosStn<- mean(subdata$Abundance[subdata$Abundance>0])
+# add row to table:
+newrow<- data.frame(Configuration = "GU1308+HB1303, June 9-Aug 18, 1000 m or deeper",
+                    NDays = (30-8)+31+18,
                     MeanAbund = meanAbund,
                     MeanAbundPosStn = meanPosStn)
 larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
+
+#10. 2013 Gunther and Bigelow cruises, June 17-Aug 15, 1000 m and deeper:
+I<- which((-1*all_bongos_2013$MODEL_DEPTH)>=1000)
+subdata<- all_bongos_2013[I,] # keep only deep stations
+I<- which(all_bongos_2013$Month=="Aug" & all_bongos_2013$Day>15)
+subdata<- all_bongos_2013[-I,] #drop the late August stations
+I<- which(all_bongos_2013$Month=="Jun" & all_bongos_2013$Day<17)
+subdata<- all_bongos_2013[-I,] #drop the early June stations
+meanAbund<- mean(subdata$Abundance)
+meanPosStn<- mean(subdata$Abundance[subdata$Abundance>0])
+# add row to table:
+newrow<- data.frame(Configuration = "GU1308+HB1303, June 9-July 20, 1000 m or deeper",
+                    NDays = (30-16)+31+15,
+                    MeanAbund = meanAbund,
+                    MeanAbundPosStn = meanPosStn)
+larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
+
+# 11. 2013 
+
+
+### Write out the table as a csv, and then can edit the text in Excel:
+write.csv(larvAbundSensTbl, 
+          file = here("results", "LarvalAbundanceSensitivity.csv"), 
+          row.names=F)
 

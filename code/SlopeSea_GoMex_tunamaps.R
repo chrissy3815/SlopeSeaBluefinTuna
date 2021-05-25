@@ -147,21 +147,8 @@ dev.off()
 
 
 ## SEAMAP abundance in 2016:
-
-seamap_bongos<- read.csv('data/SEAMAP_SPRING2016_TUNA_LARVAE_bongos.csv')
-seamap_shallow_bongos<- read.csv('data/SEAMAP_SPRING2016_TUNA_LARVAE_shallow_bongos.csv')
-seamap_zeros<- seamap_bongos[seamap_bongos$TAXON=="NO TUNA LARVAE CAUGH",]
-seamap_bluefin<- seamap_bongos[seamap_bongos$TAXON=="Thunnus thynnus",]
-seamap_bongos<- rbind(seamap_zeros, seamap_bluefin)
-seamap_bongos$NetDepth<- 200
-I<- which(seamap_bongos$STA_DPTH<200)
-seamap_bongos$NetDepth[I]<- seamap_bongos$STA_DPTH[I]-5
-seamap_bongos$Abundance<- 10*seamap_bongos$TOT_LARVAE/seamap_bongos$VOL_FILT*seamap_bongos$NetDepth
-# remove the repeated rows:
-I<- which(seamap_bongos$P_STA_NO==63)
-seamap_bongos<- seamap_bongos[-I[1],]
-I<- which(seamap_bongos$P_STA_NO==66)
-seamap_bongos<- seamap_bongos[-I[1],]
+# run the processing script:
+source(here("code","GoMexAbundProcess.R"))
 
 # Plot a map:
 # Load in the coastlines
@@ -179,14 +166,14 @@ plot(coastlineWorldFine, longitudelim=c(-78.5, -99), latitudelim=c(25, 30),
      xlab='Longitude', ylab='Latitude')
 contour(lon, lat, elev, levels=c(-100, -200, -1000, -2000), add=TRUE, 
         drawlabels=FALSE, lwd=0.75, col='dark grey')
-I<- which(seamap_bongos$Abundance>0 & seamap_bongos$Abundance<75)
-points(seamap_bongos$STA_LON[I], seamap_bongos$STA_LAT[I],
-       cex=sqrt(seamap_bongos$Abundance[I])/2, lwd=2)
-I<- which(seamap_bongos$Abundance>75)
-points(seamap_bongos$STA_LON[I], seamap_bongos$STA_LAT[I],
+I<- which(seamap_bluefin$Abundance>0 & seamap_bluefin$Abundance<75)
+points(seamap_bluefin$STA_LON[I], seamap_bluefin$STA_LAT[I],
+       cex=sqrt(seamap_bluefin$Abundance[I])/2, lwd=2)
+I<- which(seamap_bluefin$Abundance>75)
+points(seamap_bluefin$STA_LON[I], seamap_bluefin$STA_LAT[I],
        cex=4.5, lwd=2)
-I<- which(seamap_bongos$Abundance==0)
-points(seamap_bongos$STA_LON[I], seamap_bongos$STA_LAT[I], pch=3, lwd=1.5, cex=0.75)
+I<- which(seamap_bluefin$Abundance==0)
+points(seamap_bluefin$STA_LON[I], seamap_bluefin$STA_LAT[I], pch=3, lwd=1.5, cex=0.75)
 # add a legend
 legend('topleft', legend=c('0', '5', '10', '25', '>75'), 
        pch=c(3, 1, 1, 1, 1), pt.cex=c(0.75, sqrt(5)/2, sqrt(10)/2, 2.5, 4.5),

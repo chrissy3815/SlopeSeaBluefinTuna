@@ -121,3 +121,42 @@ all_bongo_stns$Abundance[is.na(all_bongo_stns$Abundance)]<- 0
 # some of the day column is a character and it seems to be messing things up.
 all_bongo_stns$Day<- as.numeric(all_bongo_stns$Day)
 
+# clean up environment:
+rm(incwidthSS, not_sorted, SS_oto_data, SS2016_eventdata, SS2016_netdata, SSmoday)
+
+## Add some code to read in and process the Slope Sea bongo data from 2013:
+
+# read in the Gunther and Bigelow cruise data:
+gu1308<- read.csv(here("data","EventDataCTDLink_GU1302WBathy.csv"))
+hb1303<- read.csv(here("data","EventDataCTDLink_HB1303WBathy.csv"))
+# do the day and month separately because they're encoded differently for some reason:
+# gunther:
+SSmoday<- strsplit(gu1308$EVENT_DATE, "-")
+gu1308$Day<- as.numeric(sapply(SSmoday, '[', 1))
+gu1308$Month<- sapply(SSmoday, '[', 2)
+# bigelow:
+SSmoday<- strsplit(hb1303$EVENT_DATE, "/")
+hb1303$Day<- as.numeric(sapply(SSmoday, '[', 2))
+hb1303$Month<- sapply(SSmoday, '[', 1)
+hb1303$Month[hb1303$Month=="7"]<- "Jul"
+hb1303$Month[hb1303$Month=="8"]<- "Aug"
+
+# row bind the gunther and bigelow data:
+all_bongos_2013<- rbind(gu1308, hb1303, make.row.names=F)
+# restrict to bongos only:
+all_bongos_2013<- all_bongos_2013[all_bongos_2013$OPERATION=="BON/CTD",]
+
+# Calculate the total volume based on whether the second sample was sorted:
+# first, assign the volume from side 1, since all side 1 samples were processed in Poland.
+all_bongos_2013$TotalVolume<- all_bongos_2013$GEAR_VOLUME_FILTERED_1 
+# Now, find the samples where side 2 was processed (either in Poland or Narragansett)
+I<- which(all_bongos_2013$PROCESSED_2!="Not Sorted-- 1/4 aliquot available?")
+# add the volume from side 2 for those rows:
+all_bongos_2013$TotalVolume[I]<- all_bongos_2013$GEAR_VOLUME_FILTERED_1[I] + all_bongos_2013$GEAR_VOLUME_FILTERED_2[I]
+# change the NAs to 0s in the Bluefin_2 column to avoid na errors:
+all_bongos_2013$BLUEFIN_2[is.na(all_bongos_2013$BLUEFIN_2)]<- 0
+
+# Now, calculate abundance as N per 10 m2:
+all_bongos_2013$Abundance<- 10*(all_bongos_2013$BLUEFIN_1 + all_bongos_2013$BLUEFIN_2)/all_bongos_2013$TotalVolume*all_bongos_2013$TOW_MAXIMUM_DEPTH
+
+rm(gu1308, hb1303, i, I, J, to_exclude, SSmoday)
