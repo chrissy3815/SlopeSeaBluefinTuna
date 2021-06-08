@@ -28,15 +28,15 @@ tunacounts_SS<- merge(tunacounts_SS,
 # reorder the columns:
 tunacounts_SS<- tunacounts_SS[,c("Cruise", "Station", "Gear" , "LatDec", "LonDec", "Nbluefin")]
 
-# drop the 2B1 samples because we won't use those for abundance calculations:
-I<- which(tunacounts_SS$Gear=="2B1")
-tunacounts_SS<- tunacounts_SS[-I,]
 # add the "Operation" column:
 tunacounts_SS$Operation<- NA
 I<- which(tunacounts_SS$Gear=="6B3I" | tunacounts_SS$Gear=="6B3" | tunacounts_SS$Gear=="6B3Z")
 tunacounts_SS$Operation[I]<- "BON/CTD"
 I<- which(tunacounts_SS$Gear=="2N3")
 tunacounts_SS$Operation[I]<- "CTD/IKMT"
+I<- which(tunacounts_SS$Gear=='2B1')
+tunacounts_SS$Operation[I]<- "BB/BON"
+
 # combine the bongos:
 tunacounts_SS<- aggregate(Nbluefin~Cruise+Station+Operation, data=tunacounts_SS,
                           FUN=sum)
@@ -72,17 +72,24 @@ SS2016_netdata<- aggregate(Vol_filtered~Cruise+Station+Operation,
 tunacounts_SS<- merge(tunacounts_SS, SS2016_netdata, all.x=T, all.y=F)
 
 # need to add the sampling depth, lat/lon, and date:
-SS2016_eventdata<- read.csv(here('data','GU1608HB1603Event.csv'))
+SS2016_eventdata<- read.csv(here('data','GU1608HB1603Event_withDayNight.csv'))
 # pull out the relevant columns:
 SS2016_eventdata<- SS2016_eventdata[,c("CRUISE_NAME", "STATION", "OPERATION", 
                                        "TOW_MAXIMUM_DEPTH", "BOTTOM_DEPTH_MAX_WIRE_OUT",
-                                       "LATITUDE", "LONGITUDE", "EVENT_DATE")]
+                                       "LATITUDE", "LONGITUDE", "EVENT_DATE", 
+                                       "SURFACE_TEMPERATURE", "DayNight")]
 names(SS2016_eventdata)<- c("Cruise", "Station", "Operation", "SamplingDepth",
-                            "BottomDepth", "Latitude", "Longitude", "Date")
+                            "BottomDepth", "Latitude", "Longitude", "Date", "SST", 
+                            "DayNight")
 # get day and month out:
-SSmoday<- strsplit(SS2016_eventdata$Date, "-")
-SS2016_eventdata$Day<- sapply(SSmoday, '[', 1)
-SS2016_eventdata$Month<- sapply(SSmoday, '[', 2)
+SSmoday<- strsplit(SS2016_eventdata$Date, "/")
+SS2016_eventdata$Day<- as.numeric(sapply(SSmoday, '[', 2))
+SS2016_eventdata$Month<- sapply(SSmoday, '[', 1)
+# change the numeric month to text month:
+SS2016_eventdata$Month[SS2016_eventdata$Month=="05"]<- "MAY"
+SS2016_eventdata$Month[SS2016_eventdata$Month=="06"]<- "JUN"
+SS2016_eventdata$Month[SS2016_eventdata$Month=="07"]<- "JUL"
+SS2016_eventdata$Month[SS2016_eventdata$Month=="08"]<- "AUG"
 
 # merge with the tuna data:
 tunacounts_SS<- merge(tunacounts_SS, SS2016_eventdata, all.x=T, all.y=F)
@@ -158,5 +165,28 @@ all_bongos_2013$BLUEFIN_2[is.na(all_bongos_2013$BLUEFIN_2)]<- 0
 
 # Now, calculate abundance as N per 10 m2:
 all_bongos_2013$Abundance<- 10*(all_bongos_2013$BLUEFIN_1 + all_bongos_2013$BLUEFIN_2)/all_bongos_2013$TotalVolume*all_bongos_2013$TOW_MAXIMUM_DEPTH
+
+## Check the day/night stats:
+# Gunter cruise:
+subdata<- all_bongo_stns[all_bongo_stns$Cruise=="GU1608",]
+sum(subdata$DayNight=="Day")/length(subdata$DayNight)
+subdata[subdata$Abundance>0,]
+mean(subdata$Abundance[subdata$DayNight=="Day"])
+mean(subdata$Abundance[subdata$DayNight=="Night"])
+# Bigelow cruise:
+subdata<- all_bongo_stns[all_bongo_stns$Cruise=="HB1603",]
+sum(subdata$DayNight=="Day")/length(subdata$DayNight)
+I<- which(subdata$Month=="AUG" & subdata$Day>15)
+subdata<- subdata[-I,] # drop the late august stations
+I<- which(subdata$BottomDepth<1000)
+subdata<- subdata[-I,] # drop the shallow stations
+sum(subdata$DayNight=="Day")/length(subdata$DayNight)
+subdata[subdata$Abundance>0,]
+mean(subdata$Abundance[subdata$DayNight=="Day"])
+mean(subdata$Abundance[subdata$DayNight=="Night"])
+subdata2<- subdata[subdata$Abundance>0,]
+sum(subdata2$DayNight=="Day")/length(subdata2$DayNight)
+mean(subdata2$Abundance[subdata2$DayNight=="Day"])
+mean(subdata2$Abundance[subdata2$DayNight=="Night"])
 
 rm(gu1308, hb1303, i, I, J, to_exclude, SSmoday)

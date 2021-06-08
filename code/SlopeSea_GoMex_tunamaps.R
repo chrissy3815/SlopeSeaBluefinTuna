@@ -180,3 +180,67 @@ legend('topleft', legend=c('0', '5', '10', '25', '>75'),
        title="N per 10 m2")
 dev.off()
 
+
+## Map of AMAPPS Survey strata:
+
+# Color palette that is colorblind-accessible:
+# Grey, orange, light blue, green, yellow, dark blue, red, pink, black
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", 
+               "#D55E00", "#CC79A7", "#000000")
+
+# load strata:
+offshore_polygon<- read.csv(here("data","AMAPPS_Strata","OffshelfStrataByMammal.csv"),
+                            header=F)
+names(offshore_polygon)<- c("Latitude", "Longitude")
+shelfbreak_polygon<- read.csv(here("data","AMAPPS_Strata","ShelfbreakStrataByMammal.csv"),
+                              header=F)
+names(shelfbreak_polygon)<- c("Latitude", "Longitude")
+# need to swap the order so that it's (x,y) 
+shelfbreak_polygon<- cbind(shelfbreak_polygon$Longitude, shelfbreak_polygon$Latitude)
+offshore_polygon<- cbind(offshore_polygon$Longitude, offshore_polygon$Latitude)
+# convert offshore polygon to spatial polygon object
+p<- Polygon(offshore_polygon)
+ps<- Polygons(list(p),1)
+offshore_sps<- SpatialPolygons(list(ps))
+proj4string(offshore_sps)<- CRS("+proj=longlat")
+# now repeat for shelfbreak polygon
+p<- Polygon(shelfbreak_polygon)
+ps<- Polygons(list(p),1)
+shelfbreak_sps<- SpatialPolygons(list(ps))
+proj4string(shelfbreak_sps)<- CRS("+proj=longlat")
+
+# Load in the survey lines:
+offshore_lines<- read.csv("data/AMAPPS_Strata/Offshelf_Lines.csv")
+offshore_lines<- offshore_lines[,c("Lon","Lat")]
+l<- Line(offshore_lines)
+ls<- Lines(list(l),1)
+offshore_lines_sls<- SpatialLines(list(ls))
+proj4string(offshore_lines_sls)<- CRS("+proj=longlat")
+shelfbreak_lines<- read.csv("data/AMAPPS_Strata/Shelfbreak_Lines.csv")
+shelfbreak_lines<- shelfbreak_lines[,c("Lon","Lat")]
+l<- Line(shelfbreak_lines)
+ls<- Lines(list(l),1)
+shelfbreak_lines_sls<- SpatialLines(list(ls))
+proj4string(shelfbreak_lines_sls)<- CRS("+proj=longlat")
+
+# Load in the coastlines
+data(coastlineWorldFine, package="ocedata")
+# read in the kickass bathymetry
+ncid<- nc_open(here('data',"SlopeSeaBathymetry",'GEBCO_2014_2D_-85.1699_25.7039_-55.3641_44.7816.nc'))
+lat<- ncvar_get(ncid, varid='lat')
+lon<- ncvar_get(ncid, varid='lon')
+elev<- ncvar_get(ncid, varid='elevation')
+nc_close(ncid)
+
+# plot as eps:
+setEPS()
+postscript('results/AMAPPS_survey_strata.eps', height=5.5, width=7)
+plot(coastlineWorldFine, longitudelim=c(-64, -76), latitudelim=c(34, 42.5))
+contour(lon, lat, elev, levels=c(-100, -200, -1000, -2000), add=TRUE, 
+        drawlabels=FALSE, lwd=0.75, col='dark grey')
+plot(offshore_sps, border=cbPalette[7], lwd=1.5, add=T)
+plot(shelfbreak_sps, border=cbPalette[7], lwd=1.5, add=T)
+plot(offshore_lines_sls, col=cbPalette[3], lwd=1.25, add=T)
+plot(shelfbreak_lines_sls, col=cbPalette[3], lwd=1.25, add=T)
+dev.off()
+

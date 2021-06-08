@@ -4,7 +4,8 @@ library(here)
 
 # read in the data that Glenn Zapfe sent me for 2016:
 seamap_bongos<- read.csv(here('data','SEAMAP_SPRING2016_TUNA_LARVAE_bongos_ENVIRO.csv'))
-# seamap_shallow_bongos<- read.csv(here('data','SPRING2016_TUNA_LARVAE_shallow_bongos_ENVIRO.csv'))
+# seamap_shallow_bongos<- read.csv(here('data','SEAMAP_SPRING2016_TUNA_LARVAE_shallow_bongos_ENVIRO.csv'))
+seamap_neuston<- read.csv(here('data','SEAMAP_SPRING2016_TUNA_LARVAE_neuston_ENVIRO.csv'))
 # I'm not going to use the "Shallow Bongos" dataset because they seem to go to similar depths but the mesh is 505
 # The SEAMAP report for 2016 does not mention anything about shallow bongos or tows with 505 mesh.
 # Link to SEAMAP report: gsmfc.org/publications/GSMFC%20Number%20261.pdf

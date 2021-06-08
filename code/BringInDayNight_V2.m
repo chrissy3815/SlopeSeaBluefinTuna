@@ -1,8 +1,11 @@
 
+addpath /Users/chrissy/JointProgram/SlopeSea/2016_data/SlopeSeaBluefinTuna/data
+addpath /Users/chrissy/JointProgram/SlopeSea/2016_data/SlopeSeaBluefinTuna/code
+
 %kk=find(b(k)<rs(1) & b(k)>rs(2))
-T=readtable('EventDataCTDLink_HB1603.csv')
-T.TimeDecimal=hour(T.EVENT_DATE)+minute(T.EVENT_DATE)/60
-T.DayNight(:)="Unk"
+T=readtable('GU1608HB1603Event.csv');
+T.TimeDecimal=hour(T.EVENT_DATE)+minute(T.EVENT_DATE)/60;
+T.DayNight(:)="Unk";
 T.Sunrise(:)=nan;
 T.Sunset(:)=nan;
 for n=1:height(T)
@@ -27,4 +30,7 @@ for n=1:height(T)
     end
     
 end
+
+% save as a csv
+writetable(T,'/Users/chrissy/JointProgram/SlopeSea/2016_data/SlopeSeaBluefinTuna/data/GU1608HB1603Event_withDayNight.csv')
 

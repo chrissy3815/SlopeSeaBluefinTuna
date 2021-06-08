@@ -7,6 +7,9 @@
 library(here)
 library(sp)
 library(rgdal)
+library(oce)
+library(ocedata)
+library(ncdf4)
 
 # load data:
 source(here("code", "SlopeSeaAbundProcess.R"))
@@ -17,6 +20,8 @@ source(here("code", "GoMexAbundProcess.R"))
 # initialize the table:
 larvAbundSensTbl<- data.frame(Configuration = vector(),
                               NDays = vector(),
+                              Area = vector(),
+                              NPerTow = vector(),
                               MeanAbund = vector(),
                               MeanAbundPosStn = vector())
 
@@ -29,9 +34,27 @@ I<- which(subdata$BottomDepth<1000)
 subdata<- subdata[-I,] # drop the shallow stations
 meanAbund<- mean(subdata$Abundance)
 meanPosStn<- mean(subdata$Abundance[subdata$Abundance>0])
+catchrate<- sum(subdata$Nbluefin, na.rm=T)/length(subdata$Station)
+sum(subdata$DayNight=="Day")/length(subdata$DayNight)
 # add row to table:
 newrow<- data.frame(Configuration = "GU1608+HB1603, June 17-Aug 15, 1000m and deeper",
                     NDays = (30-16)+31+15,
+                    NPerTow = catchrate,
+                    MeanAbund = meanAbund,
+                    MeanAbundPosStn = meanPosStn)
+larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
+
+
+#1a. Gunther and Bigelow cruises, June 17-Aug 15, all stations
+I<- which(all_bongo_stns$Month=="AUG" & all_bongo_stns$Day>15) 
+subdata<- all_bongo_stns[-I,] # drop the late august stations
+meanAbund<- mean(subdata$Abundance)
+meanPosStn<- mean(subdata$Abundance[subdata$Abundance>0])
+catchrate<- sum(subdata$Nbluefin, na.rm=T)/length(subdata$Station)
+# add row to table:
+newrow<- data.frame(Configuration = "GU1608+HB1603, June 17-Aug 15, all stations",
+                    NDays = (30-16)+31+15,
+                    NPerTow = catchrate,
                     MeanAbund = meanAbund,
                     MeanAbundPosStn = meanPosStn)
 larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
@@ -45,9 +68,11 @@ I<- which(subdata$BottomDepth<1000)
 subdata<- subdata[-I,] # drop the shallow samples
 meanAbund<- mean(subdata$Abundance)
 meanPosStn<- mean(subdata$Abundance[subdata$Abundance>0])
+catchrate<- sum(subdata$Nbluefin, na.rm=T)/length(subdata$Station)
 # add row to table:
 newrow<- data.frame(Configuration = "HB1603, June 28-Aug 15, 1000m and deeper",
                     NDays = (30-27)+31+15,
+                    NPerTow = catchrate,
                     MeanAbund = meanAbund,
                     MeanAbundPosStn = meanPosStn)
 larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
@@ -59,9 +84,11 @@ I<- which(subdata$Month=="AUG" & subdata$Day>8)
 subdata<- subdata[-I,] # drop the later august stations
 meanAbund<- mean(subdata$Abundance)
 meanPosStn<- mean(subdata$Abundance[subdata$Abundance>0])
+catchrate<- sum(subdata$Nbluefin, na.rm=T)/length(subdata$Station)
 # add row to table:
 newrow<- data.frame(Configuration = "HB1603, June 28-Aug 8",
                     NDays = (30-27)+31+8,
+                    NPerTow = catchrate,
                     MeanAbund = meanAbund,
                     MeanAbundPosStn = meanPosStn)
 larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
@@ -75,9 +102,11 @@ I<- which(subdata$BottomDepth<1000)
 subdata<- subdata[-I,] # drop the shallow stations
 meanAbund<- mean(subdata$Abundance)
 meanPosStn<- mean(subdata$Abundance[subdata$Abundance>0])
+catchrate<- sum(subdata$Nbluefin, na.rm=T)/length(subdata$Station)
 # add row to table:
 newrow<- data.frame(Configuration = "HB1603, June 28-Aug 8, 1000m and deeper",
                     NDays = (30-27)+31+8,
+                    NPerTow = catchrate,
                     MeanAbund = meanAbund,
                     MeanAbundPosStn = meanPosStn)
 larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
@@ -112,15 +141,13 @@ proj4string(points_sps)<- CRS("+proj=longlat")
 # extract offshore points and calculate mean:
 offshorepoints<- points_sps[!is.na(over(points_sps, offshore_sps)),]
 offshoremean<- mean(offshorepoints$Abundance)
-offshoremean
 offshoremeanPos<- mean(offshorepoints$Abundance[offshorepoints$Abundance>0])
-offshoremeanPos
+offshorecatchrate<- sum(offshorepoints$Nbluefin, na.rm=T)/length(offshorepoints$Station)
 # extract shelfbreak points and calculate mean:
 shelfbreakpoints<- points_sps[!is.na(over(points_sps, shelfbreak_sps)),]
 shelfbreakmean<- mean(shelfbreakpoints$Abundance)
-shelfbreakmean
 shelfbreakmeanPos<- mean(shelfbreakpoints$Abundance[shelfbreakpoints$Abundance>0])
-shelfbreakmeanPos
+shelfbreakcatchrate<- sum(shelfbreakpoints$Nbluefin, na.rm=T)/length(shelfbreakpoints$Station)
 # calculate the polygon areas:
 shelfbreak_sps<- spTransform(shelfbreak_sps, CRS=("+proj=utm +zone=18 +datum=WGS84 +units=km"))
 offshore_sps<- spTransform(offshore_sps, CRS=("+proj=utm +zone=18 +datum=WGS84 +units=km"))
@@ -128,12 +155,12 @@ shelfbreak_area<- shelfbreak_sps@polygons[[1]]@area
 offshore_area<- offshore_sps@polygons[[1]]@area
 # calculate the stratified means:
 stratMean<- 1/(shelfbreak_area+offshore_area)*(shelfbreakmean*shelfbreak_area+offshoremean*offshore_area)
-stratMean
 stratMeanPos<- 1/(shelfbreak_area+offshore_area)*(shelfbreakmeanPos*shelfbreak_area+offshoremeanPos*offshore_area)
-stratMeanPos
+stratcatchrate<- 1/(shelfbreak_area+offshore_area)*(shelfbreakcatchrate*shelfbreak_area+offshorecatchrate*offshore_area)
 # add row to table:
 newrow<- data.frame(Configuration = "HB1603, June 28-Aug 24, stratified mean",
                     NDays = (30-27)+31+24,
+                    NPerTow = stratcatchrate,
                     MeanAbund = stratMean,
                     MeanAbundPosStn = stratMeanPos)
 larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
@@ -150,21 +177,21 @@ points_sps<- spTransform(points_sps, CRS=("+proj=utm +zone=18 +datum=WGS84 +unit
 # extract offshore points and calculate mean:
 offshorepoints<- points_sps[!is.na(over(points_sps, offshore_sps)),]
 offshoremean<- mean(offshorepoints$Abundance)
-offshoremean
 offshoremeanPos<- mean(offshorepoints$Abundance[offshorepoints$Abundance>0])
-offshoremeanPos
+offshorecatchrate<- sum(offshorepoints$Nbluefin, na.rm=T)/length(offshorepoints$Station)
 # extract shelfbreak points and calculate mean:
 shelfbreakpoints<- points_sps[!is.na(over(points_sps, shelfbreak_sps)),]
 shelfbreakmean<- mean(shelfbreakpoints$Abundance)
-shelfbreakmean
 shelfbreakmeanPos<- mean(shelfbreakpoints$Abundance[shelfbreakpoints$Abundance>0])
-shelfbreakmeanPos
+shelfbreakcatchrate<- sum(shelfbreakpoints$Nbluefin, na.rm=T)/length(shelfbreakpoints$Station)
 # calculate the stratified means:
 stratMean<- 1/(shelfbreak_area+offshore_area)*(shelfbreakmean*shelfbreak_area+offshoremean*offshore_area)
 stratMeanPos<- 1/(shelfbreak_area+offshore_area)*(shelfbreakmeanPos*shelfbreak_area+offshoremeanPos*offshore_area)
+stratcatchrate<- 1/(shelfbreak_area+offshore_area)*(shelfbreakcatchrate*shelfbreak_area+offshorecatchrate*offshore_area)
 # add row to table:
 newrow<- data.frame(Configuration = "HB1603, June 28-Aug 8, stratified mean",
                     NDays = (30-27)+31+8,
+                    NPerTow = stratcatchrate,
                     MeanAbund = stratMean,
                     MeanAbundPosStn = stratMeanPos)
 larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
@@ -182,22 +209,21 @@ points_sps<- spTransform(points_sps, CRS=("+proj=utm +zone=18 +datum=WGS84 +unit
 # extract offshore points and calculate mean:
 offshorepoints<- points_sps[!is.na(over(points_sps, offshore_sps)),]
 offshoremean<- mean(offshorepoints$Abundance)
-offshoremean
 offshoremeanPos<- mean(offshorepoints$Abundance[offshorepoints$Abundance>0])
-offshoremeanPos
+offshorecatchrate<- sum(offshorepoints$Nbluefin, na.rm=T)/length(offshorepoints$Station)
 # extract shelfbreak points and calculate mean:
 shelfbreakpoints<- points_sps[!is.na(over(points_sps, shelfbreak_sps)),]
 shelfbreakmean<- mean(shelfbreakpoints$Abundance)
-shelfbreakmean
 shelfbreakmeanPos<- mean(shelfbreakpoints$Abundance[shelfbreakpoints$Abundance>0])
-shelfbreakmeanPos
+shelfbreakcatchrate<- sum(shelfbreakpoints$Nbluefin, na.rm=T)/length(shelfbreakpoints$Station)
 # calculate the stratified means:
 stratMean<- 1/(shelfbreak_area+offshore_area)*(shelfbreakmean*shelfbreak_area+offshoremean*offshore_area)
-stratMean
 stratMeanPos<- 1/(shelfbreak_area+offshore_area)*(shelfbreakmeanPos*shelfbreak_area+offshoremeanPos*offshore_area)
+stratcatchrate<- 1/(shelfbreak_area+offshore_area)*(shelfbreakcatchrate*shelfbreak_area+offshorecatchrate*offshore_area)
 # add row to table:
 newrow<- data.frame(Configuration = "HB1603, June 28-July 28, stratified mean",
                     NDays = (30-27)+28,
+                    NPerTow = stratcatchrate,
                     MeanAbund = stratMean,
                     MeanAbundPosStn = stratMeanPos)
 larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
@@ -205,25 +231,27 @@ larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
 #8. SEAMAP data:
 # this dataset that I have covers April 30 to May 30, 31 days.
 seamapmean<- mean(seamap_bluefin$Abundance)
-seamapmean
 seamapmeanPos<- mean(seamap_bluefin$Abundance[seamap_bluefin$Abundance>0])
-seamapmeanPos
+catchrate<- sum(seamap_bluefin$TOT_LARVAE, na.rm=T)/length(seamap_bluefin$P_STA_NO)
 # add row to table:
 newrow<- data.frame(Configuration = "SEAMAP 2016, April 30-May 30",
                     NDays = 31,
+                    NPerTow = catchrate,
                     MeanAbund = seamapmean,
                     MeanAbundPosStn = seamapmeanPos)
 larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
 
 #9. 2013 Slope Sea data: June 21 to Aug 18, 1000 m or deeper:
-# Note: the Gunther cruise didn't get into deep water until June 21
+# Note: the Gunter cruise didn't get into deep water until June 21
 I<- which((-1*all_bongos_2013$MODEL_DEPTH)>=1000)
 subdata<- all_bongos_2013[I,]
 meanAbund<- mean(subdata$Abundance)
 meanPosStn<- mean(subdata$Abundance[subdata$Abundance>0])
+catchrate<- sum(subdata$BLUEFIN_1, subdata$BLUEFIN_2, na.rm=T)/length(subdata$STATION)
 # add row to table:
-newrow<- data.frame(Configuration = "GU1308+HB1303, June 21-Aug 18, 1000 m or deeper",
+newrow<- data.frame(Configuration = "GU1302+HB1303, June 21-Aug 18, 1000 m or deeper",
                     NDays = (30-20)+31+18,
+                    NPerTow = catchrate,
                     MeanAbund = meanAbund,
                     MeanAbundPosStn = meanPosStn)
 larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
@@ -233,9 +261,11 @@ I<- which(all_bongos_2013$CRUISE_NAME=="HB1303")
 subdata<- all_bongos_2013[I,] # keep only the bigelow cruise
 meanAbund<- mean(subdata$Abundance)
 meanPosStn<- mean(subdata$Abundance[subdata$Abundance>0])
+catchrate<- sum(subdata$BLUEFIN_1, subdata$BLUEFIN_2, na.rm=T)/length(subdata$STATION)
 # add row to table:
 newrow<- data.frame(Configuration = "HB1303, July 2-Aug 18, all stations",
                     NDays = (31-1)+18,
+                    NPerTow = catchrate,
                     MeanAbund = meanAbund,
                     MeanAbundPosStn = meanPosStn)
 larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
@@ -249,9 +279,11 @@ I<- which(subdata$Month=="Aug" & subdata$Day>12)
 subdata<- subdata[-I,] #drop the late August stations
 meanAbund<- mean(subdata$Abundance)
 meanPosStn<- mean(subdata$Abundance[subdata$Abundance>0])
+catchrate<- sum(subdata$BLUEFIN_1, subdata$BLUEFIN_2, na.rm=T)/length(subdata$STATION)
 # add row to table:
 newrow<- data.frame(Configuration = "HB1303, July2-Aug 12, 1000 m or deeper",
                     NDays = (31-1)+12,
+                    NPerTow = catchrate,
                     MeanAbund = meanAbund,
                     MeanAbundPosStn = meanPosStn)
 larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
@@ -266,16 +298,20 @@ points_sps<- spTransform(points_sps, CRS=("+proj=utm +zone=18 +datum=WGS84 +unit
 offshorepoints<- points_sps[!is.na(over(points_sps, offshore_sps)),]
 offshoremean<- mean(offshorepoints$Abundance)
 offshoremeanPos<- mean(offshorepoints$Abundance[offshorepoints$Abundance>0])
+offshorecatchrate<- sum(offshorepoints$BLUEFIN_1, offshorepoints$BLUEFIN_2, na.rm=T)/length(offshorepoints$STATION)
 # extract shelfbreak points and calculate mean:
 shelfbreakpoints<- points_sps[!is.na(over(points_sps, shelfbreak_sps)),]
 shelfbreakmean<- mean(shelfbreakpoints$Abundance)
 shelfbreakmeanPos<- mean(shelfbreakpoints$Abundance[shelfbreakpoints$Abundance>0])
+shelfbreakcatchrate<- sum(shelfbreakpoints$BLUEFIN_1, shelfbreakpoints$BLUEFIN_2, na.rm=T)/length(shelfbreakpoints$STATION)
 # calculate the stratified means:
 stratMean<- 1/(shelfbreak_area+offshore_area)*(shelfbreakmean*shelfbreak_area+offshoremean*offshore_area)
 stratMeanPos<- 1/(shelfbreak_area+offshore_area)*(shelfbreakmeanPos*shelfbreak_area+offshoremeanPos*offshore_area)
+stratcatchrate<- 1/(shelfbreak_area+offshore_area)*(shelfbreakcatchrate*shelfbreak_area+offshorecatchrate*offshore_area)
 # add row to table:
 newrow<- data.frame(Configuration = "HB1303, July 2-Aug 18, stratified mean",
                     NDays = (31-1)+18,
+                    NPerTow = stratcatchrate,
                     MeanAbund = stratMean,
                     MeanAbundPosStn = stratMeanPos)
 larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
@@ -292,17 +328,22 @@ points_sps<- spTransform(points_sps, CRS=("+proj=utm +zone=18 +datum=WGS84 +unit
 offshorepoints<- points_sps[!is.na(over(points_sps, offshore_sps)),]
 offshoremean<- mean(offshorepoints$Abundance)
 offshoremeanPos<- mean(offshorepoints$Abundance[offshorepoints$Abundance>0])
+offshorecatchrate<- sum(offshorepoints$BLUEFIN_1, offshorepoints$BLUEFIN_2, na.rm=T)/length(offshorepoints$STATION)
 # extract shelfbreak points and calculate mean:
 shelfbreakpoints<- points_sps[!is.na(over(points_sps, shelfbreak_sps)),]
 shelfbreakmean<- mean(shelfbreakpoints$Abundance)
 shelfbreakmeanPos<- mean(shelfbreakpoints$Abundance[shelfbreakpoints$Abundance>0])
+shelfbreakcatchrate<- sum(shelfbreakpoints$BLUEFIN_1, shelfbreakpoints$BLUEFIN_2, na.rm=T)/length(shelfbreakpoints$STATION)
 if (is.na(shelfbreakmeanPos)){shelfbreakmeanPos<- 0}
+if (is.na(shelfbreakcatchrate)){shelfbreakcatchrate<- 0}
 # calculate the stratified means:
 stratMean<- 1/(shelfbreak_area+offshore_area)*(shelfbreakmean*shelfbreak_area+offshoremean*offshore_area)
 stratMeanPos<- 1/(shelfbreak_area+offshore_area)*(shelfbreakmeanPos*shelfbreak_area+offshoremeanPos*offshore_area)
+stratcatchrate<- 1/(shelfbreak_area+offshore_area)*(shelfbreakcatchrate*shelfbreak_area+offshorecatchrate*offshore_area)
 # add row to table:
 newrow<- data.frame(Configuration = "HB1303, July 2-Aug 1, stratified mean",
                     NDays = (31-1)+1,
+                    NPerTow = stratcatchrate,
                     MeanAbund = stratMean,
                     MeanAbundPosStn = stratMeanPos)
 larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
@@ -312,4 +353,3 @@ larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
 write.csv(larvAbundSensTbl, 
           file = here("results", "LarvalAbundanceSensitivity.csv"), 
           row.names=F)
-
