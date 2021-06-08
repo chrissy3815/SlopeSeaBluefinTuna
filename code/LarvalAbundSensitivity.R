@@ -11,6 +11,22 @@ library(oce)
 library(ocedata)
 library(ncdf4)
 
+# A function for calculating the convex hull area in km2:
+sample_area<- function(subdata, zone){
+  points<- subdata[,c("Longitude","Latitude")]
+  this_hull<- chull(points)
+  this_polygon<- subdata[this_hull,c("Longitude","Latitude")]
+  # convert polygon to spatial polygon object
+  p<- Polygon(this_polygon)
+  ps<- Polygons(list(p),1)
+  this_sps<- SpatialPolygons(list(ps))
+  proj4string(this_sps)<- CRS("+proj=longlat")
+  this_CRS<- paste("+proj=utm +zone=",zone," +datum=WGS84 +units=km", sep='')
+  this_sps<- spTransform(this_sps, CRS=this_CRS)
+  this_area<- this_sps@polygons[[1]]@area
+  return(this_area)
+}
+
 # load data:
 source(here("code", "SlopeSeaAbundProcess.R"))
 
@@ -39,6 +55,7 @@ sum(subdata$DayNight=="Day")/length(subdata$DayNight)
 # add row to table:
 newrow<- data.frame(Configuration = "GU1608+HB1603, June 17-Aug 15, 1000m and deeper",
                     NDays = (30-16)+31+15,
+                    Area = sample_area(subdata, 18),
                     NPerTow = catchrate,
                     MeanAbund = meanAbund,
                     MeanAbundPosStn = meanPosStn)
@@ -54,6 +71,7 @@ catchrate<- sum(subdata$Nbluefin, na.rm=T)/length(subdata$Station)
 # add row to table:
 newrow<- data.frame(Configuration = "GU1608+HB1603, June 17-Aug 15, all stations",
                     NDays = (30-16)+31+15,
+                    Area = sample_area(subdata, 18),
                     NPerTow = catchrate,
                     MeanAbund = meanAbund,
                     MeanAbundPosStn = meanPosStn)
@@ -72,6 +90,7 @@ catchrate<- sum(subdata$Nbluefin, na.rm=T)/length(subdata$Station)
 # add row to table:
 newrow<- data.frame(Configuration = "HB1603, June 28-Aug 15, 1000m and deeper",
                     NDays = (30-27)+31+15,
+                    Area = sample_area(subdata, 18),
                     NPerTow = catchrate,
                     MeanAbund = meanAbund,
                     MeanAbundPosStn = meanPosStn)
@@ -88,6 +107,7 @@ catchrate<- sum(subdata$Nbluefin, na.rm=T)/length(subdata$Station)
 # add row to table:
 newrow<- data.frame(Configuration = "HB1603, June 28-Aug 8",
                     NDays = (30-27)+31+8,
+                    Area = sample_area(subdata, 18),
                     NPerTow = catchrate,
                     MeanAbund = meanAbund,
                     MeanAbundPosStn = meanPosStn)
@@ -106,6 +126,7 @@ catchrate<- sum(subdata$Nbluefin, na.rm=T)/length(subdata$Station)
 # add row to table:
 newrow<- data.frame(Configuration = "HB1603, June 28-Aug 8, 1000m and deeper",
                     NDays = (30-27)+31+8,
+                    Area = sample_area(subdata, 18),
                     NPerTow = catchrate,
                     MeanAbund = meanAbund,
                     MeanAbundPosStn = meanPosStn)
@@ -160,6 +181,7 @@ stratcatchrate<- 1/(shelfbreak_area+offshore_area)*(shelfbreakcatchrate*shelfbre
 # add row to table:
 newrow<- data.frame(Configuration = "HB1603, June 28-Aug 24, stratified mean",
                     NDays = (30-27)+31+24,
+                    Area = shelfbreak_area+offshore_area,
                     NPerTow = stratcatchrate,
                     MeanAbund = stratMean,
                     MeanAbundPosStn = stratMeanPos)
@@ -191,6 +213,7 @@ stratcatchrate<- 1/(shelfbreak_area+offshore_area)*(shelfbreakcatchrate*shelfbre
 # add row to table:
 newrow<- data.frame(Configuration = "HB1603, June 28-Aug 8, stratified mean",
                     NDays = (30-27)+31+8,
+                    Area = offshore_area+shelfbreak_area,
                     NPerTow = stratcatchrate,
                     MeanAbund = stratMean,
                     MeanAbundPosStn = stratMeanPos)
@@ -223,6 +246,7 @@ stratcatchrate<- 1/(shelfbreak_area+offshore_area)*(shelfbreakcatchrate*shelfbre
 # add row to table:
 newrow<- data.frame(Configuration = "HB1603, June 28-July 28, stratified mean",
                     NDays = (30-27)+28,
+                    Area = shelfbreak_area+offshore_area,
                     NPerTow = stratcatchrate,
                     MeanAbund = stratMean,
                     MeanAbundPosStn = stratMeanPos)
@@ -233,9 +257,13 @@ larvAbundSensTbl<- rbind(larvAbundSensTbl, newrow)
 seamapmean<- mean(seamap_bluefin$Abundance)
 seamapmeanPos<- mean(seamap_bluefin$Abundance[seamap_bluefin$Abundance>0])
 catchrate<- sum(seamap_bluefin$TOT_LARVAE, na.rm=T)/length(seamap_bluefin$P_STA_NO)
+# lat/lon for area:
+seamap_stations<- seamap_bluefin[,c("STA_LAT","STA_LON")]
+names(seamap_stations)<- c("Latitude","Longitude")
 # add row to table:
 newrow<- data.frame(Configuration = "SEAMAP 2016, April 30-May 30",
                     NDays = 31,
+                    Area = sample_area(seamap_stations, 16),
                     NPerTow = catchrate,
                     MeanAbund = seamapmean,
                     MeanAbundPosStn = seamapmeanPos)
@@ -248,9 +276,12 @@ subdata<- all_bongos_2013[I,]
 meanAbund<- mean(subdata$Abundance)
 meanPosStn<- mean(subdata$Abundance[subdata$Abundance>0])
 catchrate<- sum(subdata$BLUEFIN_1, subdata$BLUEFIN_2, na.rm=T)/length(subdata$STATION)
+ss_stations<- subdata[,c("LONGITUDE","LATITUDE")]
+names(ss_stations)<- c("Longitude","Latitude")
 # add row to table:
 newrow<- data.frame(Configuration = "GU1302+HB1303, June 21-Aug 18, 1000 m or deeper",
                     NDays = (30-20)+31+18,
+                    Area = sample_area(ss_stations, 18),
                     NPerTow = catchrate,
                     MeanAbund = meanAbund,
                     MeanAbundPosStn = meanPosStn)
@@ -262,9 +293,12 @@ subdata<- all_bongos_2013[I,] # keep only the bigelow cruise
 meanAbund<- mean(subdata$Abundance)
 meanPosStn<- mean(subdata$Abundance[subdata$Abundance>0])
 catchrate<- sum(subdata$BLUEFIN_1, subdata$BLUEFIN_2, na.rm=T)/length(subdata$STATION)
+ss_stations<- subdata[,c("LONGITUDE","LATITUDE")]
+names(ss_stations)<- c("Longitude","Latitude")
 # add row to table:
 newrow<- data.frame(Configuration = "HB1303, July 2-Aug 18, all stations",
                     NDays = (31-1)+18,
+                    Area = sample_area(ss_stations, 18),
                     NPerTow = catchrate,
                     MeanAbund = meanAbund,
                     MeanAbundPosStn = meanPosStn)
@@ -280,9 +314,12 @@ subdata<- subdata[-I,] #drop the late August stations
 meanAbund<- mean(subdata$Abundance)
 meanPosStn<- mean(subdata$Abundance[subdata$Abundance>0])
 catchrate<- sum(subdata$BLUEFIN_1, subdata$BLUEFIN_2, na.rm=T)/length(subdata$STATION)
+ss_stations<- subdata[,c("LONGITUDE","LATITUDE")]
+names(ss_stations)<- c("Longitude","Latitude")
 # add row to table:
 newrow<- data.frame(Configuration = "HB1303, July2-Aug 12, 1000 m or deeper",
                     NDays = (31-1)+12,
+                    Area = sample_area(ss_stations, 18),
                     NPerTow = catchrate,
                     MeanAbund = meanAbund,
                     MeanAbundPosStn = meanPosStn)
@@ -311,6 +348,7 @@ stratcatchrate<- 1/(shelfbreak_area+offshore_area)*(shelfbreakcatchrate*shelfbre
 # add row to table:
 newrow<- data.frame(Configuration = "HB1303, July 2-Aug 18, stratified mean",
                     NDays = (31-1)+18,
+                    Area = shelfbreak_area+offshore_area,
                     NPerTow = stratcatchrate,
                     MeanAbund = stratMean,
                     MeanAbundPosStn = stratMeanPos)
@@ -343,6 +381,7 @@ stratcatchrate<- 1/(shelfbreak_area+offshore_area)*(shelfbreakcatchrate*shelfbre
 # add row to table:
 newrow<- data.frame(Configuration = "HB1303, July 2-Aug 1, stratified mean",
                     NDays = (31-1)+1,
+                    Area = shelfbreak_area+offshore_area,
                     NPerTow = stratcatchrate,
                     MeanAbund = stratMean,
                     MeanAbundPosStn = stratMeanPos)
