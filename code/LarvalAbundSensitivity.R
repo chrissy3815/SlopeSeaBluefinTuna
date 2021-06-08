@@ -12,7 +12,7 @@ library(ocedata)
 library(ncdf4)
 
 # A function for calculating the convex hull area in km2:
-sample_area<- function(subdata, zone){
+sample_area<- function(subdata, zone, buffer=F){
   points<- subdata[,c("Longitude","Latitude")]
   this_hull<- chull(points)
   this_polygon<- subdata[this_hull,c("Longitude","Latitude")]
@@ -24,6 +24,24 @@ sample_area<- function(subdata, zone){
   this_CRS<- paste("+proj=utm +zone=",zone," +datum=WGS84 +units=km", sep='')
   this_sps<- spTransform(this_sps, CRS=this_CRS)
   this_area<- this_sps@polygons[[1]]@area
+  if (buffer==T){
+    points_to_buffer<- this_sps@polygons[[1]]@Polygons[[1]]@coords
+    centroid<- this_sps@polygons[[1]]@labpt
+    new_coords<- matrix(data=NA, nrow=dim(points_to_buffer)[1], ncol=2)
+    for (i in 1:dim(points_to_buffer)[1]){
+      sub_vec<- points_to_buffer[i,]-centroid
+      lengthi<- sqrt(sum(sub_vec^2))
+      sub_vec<- sub_vec/lengthi
+      new_point<- centroid+sub_vec*(lengthi+28)
+      new_coords[i,]<- new_point
+    }
+    p<- Polygon(new_coords)
+    ps<- Polygons(list(p),1)
+    this_sps<- SpatialPolygons(list(ps))
+    this_CRS<- paste("+proj=utm +zone=",zone," +datum=WGS84 +units=km", sep='')
+    proj4string(this_sps)<- this_CRS
+    this_area<- this_sps@polygons[[1]]@area
+  }
   return(this_area)
 }
 
@@ -55,7 +73,7 @@ sum(subdata$DayNight=="Day")/length(subdata$DayNight)
 # add row to table:
 newrow<- data.frame(Configuration = "GU1608+HB1603, June 17-Aug 15, 1000m and deeper",
                     NDays = (30-16)+31+15,
-                    Area = sample_area(subdata, 18),
+                    Area = sample_area(subdata, 18, buffer=T),
                     NPerTow = catchrate,
                     MeanAbund = meanAbund,
                     MeanAbundPosStn = meanPosStn)
@@ -71,7 +89,7 @@ catchrate<- sum(subdata$Nbluefin, na.rm=T)/length(subdata$Station)
 # add row to table:
 newrow<- data.frame(Configuration = "GU1608+HB1603, June 17-Aug 15, all stations",
                     NDays = (30-16)+31+15,
-                    Area = sample_area(subdata, 18),
+                    Area = sample_area(subdata, 18, buffer=T),
                     NPerTow = catchrate,
                     MeanAbund = meanAbund,
                     MeanAbundPosStn = meanPosStn)
@@ -90,7 +108,7 @@ catchrate<- sum(subdata$Nbluefin, na.rm=T)/length(subdata$Station)
 # add row to table:
 newrow<- data.frame(Configuration = "HB1603, June 28-Aug 15, 1000m and deeper",
                     NDays = (30-27)+31+15,
-                    Area = sample_area(subdata, 18),
+                    Area = sample_area(subdata, 18, buffer=T),
                     NPerTow = catchrate,
                     MeanAbund = meanAbund,
                     MeanAbundPosStn = meanPosStn)
@@ -107,7 +125,7 @@ catchrate<- sum(subdata$Nbluefin, na.rm=T)/length(subdata$Station)
 # add row to table:
 newrow<- data.frame(Configuration = "HB1603, June 28-Aug 8",
                     NDays = (30-27)+31+8,
-                    Area = sample_area(subdata, 18),
+                    Area = sample_area(subdata, 18, buffer=T),
                     NPerTow = catchrate,
                     MeanAbund = meanAbund,
                     MeanAbundPosStn = meanPosStn)
@@ -126,7 +144,7 @@ catchrate<- sum(subdata$Nbluefin, na.rm=T)/length(subdata$Station)
 # add row to table:
 newrow<- data.frame(Configuration = "HB1603, June 28-Aug 8, 1000m and deeper",
                     NDays = (30-27)+31+8,
-                    Area = sample_area(subdata, 18),
+                    Area = sample_area(subdata, 18, buffer=T),
                     NPerTow = catchrate,
                     MeanAbund = meanAbund,
                     MeanAbundPosStn = meanPosStn)
@@ -260,10 +278,20 @@ catchrate<- sum(seamap_bluefin$TOT_LARVAE, na.rm=T)/length(seamap_bluefin$P_STA_
 # lat/lon for area:
 seamap_stations<- seamap_bluefin[,c("STA_LAT","STA_LON")]
 names(seamap_stations)<- c("Latitude","Longitude")
+seamap_xx<- c(28.25,   28.25,  29.75,  30.25,  28.5,  26.25, 24.75, 23.75,  23.75,  24.25,  25.75,  25.75,  28.25)
+seamap_yy<- c(-96.25, -88.25, -88.25, -87.00, -84.75, -83.75, -83.25, -83.25, -84.25, -85.25, -87.75,  -96.25, -96.25)
+this_polygon<- data.frame(Latitude=seamap_yy, Longitude=seamap_xx)
+# convert polygon to spatial polygon object
+p<- Polygon(this_polygon)
+ps<- Polygons(list(p),1)
+this_sps<- SpatialPolygons(list(ps))
+proj4string(this_sps)<- CRS("+proj=longlat")
+this_sps<- spTransform(this_sps, CRS="+proj=utm +zone=16 +datum=WGS84 +units=km")
+this_area<- this_sps@polygons[[1]]@area
 # add row to table:
 newrow<- data.frame(Configuration = "SEAMAP 2016, April 30-May 30",
                     NDays = 31,
-                    Area = sample_area(seamap_stations, 16),
+                    Area = this_area,
                     NPerTow = catchrate,
                     MeanAbund = seamapmean,
                     MeanAbundPosStn = seamapmeanPos)
@@ -281,7 +309,7 @@ names(ss_stations)<- c("Longitude","Latitude")
 # add row to table:
 newrow<- data.frame(Configuration = "GU1302+HB1303, June 21-Aug 18, 1000 m or deeper",
                     NDays = (30-20)+31+18,
-                    Area = sample_area(ss_stations, 18),
+                    Area = sample_area(ss_stations, 18, buffer=T),
                     NPerTow = catchrate,
                     MeanAbund = meanAbund,
                     MeanAbundPosStn = meanPosStn)
@@ -298,7 +326,7 @@ names(ss_stations)<- c("Longitude","Latitude")
 # add row to table:
 newrow<- data.frame(Configuration = "HB1303, July 2-Aug 18, all stations",
                     NDays = (31-1)+18,
-                    Area = sample_area(ss_stations, 18),
+                    Area = sample_area(ss_stations, 18, buffer=T),
                     NPerTow = catchrate,
                     MeanAbund = meanAbund,
                     MeanAbundPosStn = meanPosStn)
@@ -319,7 +347,7 @@ names(ss_stations)<- c("Longitude","Latitude")
 # add row to table:
 newrow<- data.frame(Configuration = "HB1303, July2-Aug 12, 1000 m or deeper",
                     NDays = (31-1)+12,
-                    Area = sample_area(ss_stations, 18),
+                    Area = sample_area(ss_stations, 18, buffer=T),
                     NPerTow = catchrate,
                     MeanAbund = meanAbund,
                     MeanAbundPosStn = meanPosStn)
