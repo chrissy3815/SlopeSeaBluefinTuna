@@ -211,12 +211,16 @@ names(incwidthSS)<- c("Cruise", "Station", "Gear", "Fish", "Inc1", "Inc2", "Inc3
 
 ### Check which of the possible lapillae need to be excluded from the data:
 to_exclude<- read_xlsx(here('data','SlopeSea_PossibleLapillae.xlsx'))
+# Write this to an eps file for a figure in the supplement:
+setEPS()
+postscript('results/SS2016_otolith_sagittaeQC.eps', height=5, width=6)
 plot(SS_oto_data$Increments, SS_oto_data$Radius, pch=19, xlab='Increments', ylab='Radius')
 for (i in 1:length(to_exclude$Cruise)){
   I<- which(SS_oto_data$Station==to_exclude$Station[i] &
               SS_oto_data$Fish==to_exclude$Fish[i])
   points(SS_oto_data$Increments[I], SS_oto_data$Radius[I], pch=19, col='red')
 }
+dev.off()
 ## From this plot, we determined that the only ones that are likely to be lapillae
 ## and that, therefore, should be excluded, are the ones with 2 increments because
 ## they fall at the bottom of the distribution of otolith radius for otoliths with 
