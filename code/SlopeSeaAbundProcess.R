@@ -129,7 +129,7 @@ all_bongo_stns$Abundance[is.na(all_bongo_stns$Abundance)]<- 0
 all_bongo_stns$Day<- as.numeric(all_bongo_stns$Day)
 
 # clean up environment:
-rm(incwidthSS, not_sorted, SS_oto_data, SS2016_eventdata, SS2016_netdata, SSmoday)
+rm(incwidthSS, not_sorted, SS2016_eventdata, SS2016_netdata, SSmoday)
 
 ## Add some code to read in and process the Slope Sea bongo data from 2013:
 
