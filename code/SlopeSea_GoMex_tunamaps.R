@@ -181,6 +181,42 @@ plotInset("bottomleft",
           })
 dev.off()
 
+# third version of plot, with different colors for the 2 cruises:
+setEPS()
+postscript('results/SS2016_abund_map_through_Aug15_1000m_DiffColorCruise.eps', height=5.5, width=7)
+plot(coastlineWorldFine, longitudelim=c(-64, -76), latitudelim=c(34, 42))
+contour(lon, lat, elev, levels=c(-100, -200, -1000, -2000), add=TRUE, 
+        drawlabels=FALSE, lwd=0.75, col='dark grey')
+I<- which(catchstations$Cruise=="GU1608")
+points(catchstations$Longitude[I], catchstations$Latitude[I],
+       cex=sqrt(catchstations$Abundance[I])/1.2, col='grey', lwd=2)
+I<- which(catchstations$Cruise=="HB1603")
+points(catchstations$Longitude[I], catchstations$Latitude[I],
+       cex=sqrt(catchstations$Abundance[I])/1.2, lwd=2)
+I<- which(zerostations$Cruise=="GU1608")
+points(zerostations$Longitude[I], zerostations$Latitude[I], pch=3, col='grey', lwd=1.5)
+I<- which(zerostations$Cruise=="HB1603")
+points(zerostations$Longitude[I], zerostations$Latitude[I], pch=3, lwd=1.5)
+
+# add a legend
+legend(-65, 37, legend=c('0', '2', '5', '10', '20'), 
+       col=c('black', 'black', 'blue', 'blue', 'blue'), pch=rep(1,5), 
+       pt.cex=rep(NA, 4), bty='n', 
+       title='N per 10 m2')
+legend(-65.3, 36.45, legend=rep(NA, 5), pch=c(3, 1, 1, 1, 1), 
+       pt.cex=c(1, sqrt(2)/1.2, sqrt(5)/1.2, sqrt(10)/1.2, sqrt(20)/1.2), pt.lwd=c(1.5,2,2,2,2), bty='n')
+
+# Add an inset map:
+par(new=TRUE)
+par(mar=c(1,1,1,1))
+plotInset("bottomleft", 
+          expr={plot(coastlineWorldFine, longitudelim=c(-60, -80), latitudelim=c(20, 49), 
+                     inset=TRUE, bg='white', axes=F, lwd=0.5)
+                  polygon(x=c(-63, -63, -77, -77), y=c(34, 42, 42, 34), 
+                          density=NULL, border='blue')
+          })
+dev.off()
+
 ## SEAMAP abundance in 2016:
 # run the processing script:
 source(here("code","GoMexAbundProcess.R"))
